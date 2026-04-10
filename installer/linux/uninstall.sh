@@ -187,7 +187,7 @@ main() {
         success "Flang desinstalado com sucesso! / Flang uninstalled successfully!"
         printf "\n"
         printf "  Obrigado por usar o Flang! / Thank you for using Flang!\n"
-        printf "  ${CYAN}${BOLD}github.com/flavio/flang${RESET}\n\n"
+        printf "  ${CYAN}${BOLD}github.com/flaviokalleu/flang${RESET}\n\n"
     else
         warn "Flang nao encontrado no sistema. Nada foi removido."
     fi

@@ -1,7 +1,7 @@
 #Requires -Version 5.0
 # =============================================================================
 # Flang Programming Language - Instalador para Windows
-# Versao 0.4.0
+# Versao 0.2.0
 #
 # Uso:
 #   .\install.ps1
@@ -25,7 +25,7 @@ $ErrorActionPreference = "Stop"
 # ---------------------------------------------------------------------------
 # Variaveis globais
 # ---------------------------------------------------------------------------
-$VersaoFlang    = "0.4.0"
+$VersaoFlang    = "0.2.0"
 $NomeApp        = "Flang Programming Language"
 $ExeNome        = "flang.exe"
 $DirBin         = Join-Path $DiretorioInstalacao "bin"
@@ -254,7 +254,7 @@ EXEMPLOS
 
 MAIS INFORMACOES
 ----------------
-  GitHub: https://github.com/flavio/flang
+  GitHub: https://github.com/flaviokalleu/flang
   Data de instalacao: $(Get-Date -Format "dd/MM/yyyy HH:mm")
 "@
     $readme | Set-Content -Path (Join-Path $DiretorioInstalacao "LEIA-ME.txt") -Encoding UTF8

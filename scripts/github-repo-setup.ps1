@@ -7,8 +7,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$branch = (git branch --show-current).Trim()
+if (-not $branch) {
+    $branch = "master"
+}
+
 $description = "Flang is a bilingual declarative programming language for building full-stack web applications from .fg files."
-$homepage = "https://github.com/$Owner/$Repo/tree/main/docs"
+$homepage = "https://github.com/$Owner/$Repo/tree/$branch/docs"
 $topics = @(
     "flang",
     "programming-language",

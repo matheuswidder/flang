@@ -16,11 +16,11 @@
 
 # Informacoes do pacote / Package information
 pkgname=flang
-pkgver=0.4.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Linguagem de programacao declarativa full-stack (Portugues/English)"
 arch=('x86_64' 'aarch64')
-url="https://github.com/flavio/flang"
+url="https://github.com/flaviokalleu/flang"
 license=('MIT')
 
 # Dependencias em tempo de execucao / Runtime dependencies
@@ -42,11 +42,11 @@ options=('!strip' '!emptydirs')
 # Fonte do codigo / Source
 # Opcao 1: Baixa do GitHub Releases (binario pre-compilado)
 # Option 1: Download from GitHub Releases (pre-compiled binary)
-source_x86_64=("${pkgname}-v${pkgver}-linux-amd64.tar.gz::https://github.com/flavio/flang/releases/download/v${pkgver}/flang-v${pkgver}-linux-amd64.tar.gz")
-source_aarch64=("${pkgname}-v${pkgver}-linux-arm64.tar.gz::https://github.com/flavio/flang/releases/download/v${pkgver}/flang-v${pkgver}-linux-arm64.tar.gz")
+source_x86_64=("${pkgname}-v${pkgver}-linux-amd64.tar.gz::https://github.com/flaviokalleu/flang/releases/download/v${pkgver}/flang-v${pkgver}-linux-amd64.tar.gz")
+source_aarch64=("${pkgname}-v${pkgver}-linux-arm64.tar.gz::https://github.com/flaviokalleu/flang/releases/download/v${pkgver}/flang-v${pkgver}-linux-arm64.tar.gz")
 
 # Opcao 2: Compila do codigo fonte / Option 2: Build from source
-# source=("${pkgname}-${pkgver}.tar.gz::https://github.com/flavio/flang/archive/refs/tags/v${pkgver}.tar.gz")
+# source=("${pkgname}-${pkgver}.tar.gz::https://github.com/flaviokalleu/flang/archive/refs/tags/v${pkgver}.tar.gz")
 
 # Checksums SHA256 - atualize apos cada release / Update after each release
 # Para gerar: sha256sum arquivo.tar.gz / To generate: sha256sum file.tar.gz
@@ -136,7 +136,7 @@ package() {
     local mandir="${pkgdir}/usr/share/man/man1"
     install -dm755 "$mandir"
     cat > "${mandir}/flang.1" << 'EOF'
-.TH FLANG 1 "2025" "Flang v0.4.0" "Flang Manual"
+.TH FLANG 1 "2026" "Flang v0.2.0" "Flang Manual"
 .SH NAME
 flang \- declarative full-stack programming language
 .SH SYNOPSIS
@@ -156,7 +156,7 @@ Show version
 .TP
 flang run app.fg
 .SH HOMEPAGE
-https://github.com/flavio/flang
+https://github.com/flaviokalleu/flang
 EOF
     gzip -9 "${mandir}/flang.1"
 

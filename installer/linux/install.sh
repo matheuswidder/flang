@@ -4,7 +4,7 @@
 # Instalador do Flang - Linux / macOS
 #
 # Uso / Usage:
-#   curl -fsSL https://raw.githubusercontent.com/flavio/flang/main/installer/linux/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/flaviokalleu/flang/master/installer/linux/install.sh | bash
 #   ou / or:
 #   bash install.sh
 #   bash install.sh --uninstall
@@ -27,8 +27,8 @@ RESET='\033[0m'
 # ---------------------------------------------------------------------------
 # Versao do Flang / Flang version
 # ---------------------------------------------------------------------------
-FLANG_VERSION="${FLANG_VERSION:-0.4.0}"
-FLANG_REPO="https://github.com/flavio/flang"
+FLANG_VERSION="${FLANG_VERSION:-0.2.0}"
+FLANG_REPO="https://github.com/flaviokalleu/flang"
 RELEASES_URL="${FLANG_REPO}/releases/download/v${FLANG_VERSION}"
 
 # ---------------------------------------------------------------------------
@@ -271,7 +271,7 @@ flang version
 .I ~/.local/lib/flang/examples/
 Exemplos de programas Flang
 .SH AUTOR
-Flavio <github.com/flavio/flang>
+Flavio <github.com/flaviokalleu/flang>
 .SH LICENCA
 MIT License
 '

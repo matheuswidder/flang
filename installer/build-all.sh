@@ -22,7 +22,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Configuracao / Configuration
 # ---------------------------------------------------------------------------
-FLANG_VERSION="${FLANG_VERSION:-0.4.0}"
+FLANG_VERSION="${FLANG_VERSION:-0.2.0}"
 BINARY_NAME="flang"
 
 # Diretorio raiz do projeto / Project root directory
@@ -271,7 +271,7 @@ Windows:
   flang.exe run examples\loja\loja.fg
 
 Documentacao / Documentation:
-  https://github.com/flavio/flang
+  https://github.com/flaviokalleu/flang
 
 EOF
 }
