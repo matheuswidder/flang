@@ -2478,10 +2478,37 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 		return &ast.Expression{Type: "variable", Name: name}, nil
 
 	default:
-		// For keywords used as identifiers in expression context
+		// For keywords used as identifiers/functions in expression context
+		// e.g. texto(x), numero(x), tamanho(x), maiusculo(x)
 		if p.isNameToken(tok) {
 			name := tok.Value
 			p.advance()
+
+			// Check for function call: name(...)
+			if p.current().Type == lexer.TokenLParen {
+				args, err := p.parseCallArgs()
+				if err != nil {
+					return nil, err
+				}
+				return &ast.Expression{Type: "call", Name: name, Args: args}, nil
+			}
+
+			// Check for field access: name.field
+			if p.current().Type == lexer.TokenDot {
+				p.advance()
+				fieldTok := p.current()
+				fieldName := fieldTok.Value
+				p.advance()
+				if p.current().Type == lexer.TokenLParen {
+					args, err := p.parseCallArgs()
+					if err != nil {
+						return nil, err
+					}
+					return &ast.Expression{Type: "call", Name: fieldName, Object: name, Args: args}, nil
+				}
+				return &ast.Expression{Type: "field_access", Object: name, Field: fieldName}, nil
+			}
+
 			return &ast.Expression{Type: "variable", Name: name}, nil
 		}
 		return &ast.Expression{Type: "literal", Value: nil}, nil
