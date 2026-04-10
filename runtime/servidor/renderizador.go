@@ -1089,6 +1089,7 @@ function carregarListasInline(modelo){
     if(!m||!tb||!table)return;
     fetch('/api/'+m).then(function(r){return r.json();}).then(function(items){
       items=items||[];
+      console.log('carregarListasInline',m,'items:',items.length);
       renderTableRows(tb,m,items);
       if(!items.length){
         if(vazio)vazio.style.display='flex';
@@ -1097,7 +1098,8 @@ function carregarListasInline(modelo){
       }
       if(vazio)vazio.style.display='none';
       table.style.display='';
-    }).catch(function(){
+    }).catch(function(err){
+      console.error('carregarListasInline error',m,err);
       if(vazio)vazio.style.display='flex';
       table.style.display='none';
     });

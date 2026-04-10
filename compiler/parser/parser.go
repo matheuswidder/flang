@@ -3117,8 +3117,15 @@ func (p *Parser) parseSidebar() error {
 				case "link", "href":
 					if !p.isAtEnd() && p.current().Type == lexer.TokenString {
 						item.Link = p.advance().Value
-					} else if !p.isAtEnd() && p.current().Type == lexer.TokenIdentifier {
+					} else if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+						// Read link value, joining tokens with - (e.g. screen-tickets)
 						item.Link = p.advance().Value
+						for !p.isAtEnd() && p.current().Type == lexer.TokenMinus {
+							p.advance() // consume '-'
+							if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+								item.Link += "-" + p.advance().Value
+							}
+						}
 					}
 				default:
 					// skip unknown props
