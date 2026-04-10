@@ -22,6 +22,12 @@ Aprenda a criar aplicacoes completas com Flang em menos de 30 minutos.
 14. [English Mode](#14-english-mode)
 15. [Projeto Completo](#15-projeto-completo)
 16. [Deploy](#16-deploy)
+17. [Tema e Customizacao](#17-tema-e-customizacao)
+18. [Rotas e Paginas Customizadas](#18-rotas-e-paginas-customizadas)
+19. [Sidebar Personalizada](#19-sidebar-personalizada)
+20. [Async e Paralelismo](#20-async-e-paralelismo)
+21. [flang build](#21-flang-build)
+22. [Multilingual](#22-multilingual)
 
 ---
 
@@ -55,7 +61,7 @@ Voce vera:
   ██╔══╝  ██║     ██╔══██╗██║╚██╗██║██║   ██║
   ██║     ███████╗██║  ██║██║ ╚████║╚██████╔╝
   ╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝
-  v0.4 - Tudo roda direto do .fg
+  v0.5.0 - Tudo roda direto do .fg
 ```
 
 ---
@@ -844,14 +850,311 @@ importar "eventos.fg"
 
 ---
 
-## Proximo Passos
+## 17. Tema e Customizacao
+
+A partir da v0.5.0, o Flang oferece presets de tema, cores por nome e estilos visuais.
+
+### Presets de Tema
+
+Use um preset pronto com uma unica linha:
+
+```
+tema moderno
+```
+
+Presets disponiveis:
+
+| Preset | Descricao |
+|--------|-----------|
+| `moderno` | Glassmorphism, gradientes, sombras suaves |
+| `simples` | Flat, clean, sem distracao |
+| `elegante` | Tipografia refinada, cores suaves |
+| `corporativo` | Visual profissional, sidebar escura |
+| `claro` | Fundo branco, cores leves |
+
+### Cores por Nome
+
+Nao precisa mais decorar codigos hex. Use nomes:
+
+```
+tema
+  cor primaria azul
+  cor secundaria verde
+  cor destaque amarelo
+```
+
+Nomes disponiveis: `azul`, `verde`, `vermelho`, `roxo`, `laranja`, `amarelo`, `rosa`, `escuro`, `claro`
+
+### Estilos Visuais
+
+Combine com qualquer tema:
+
+```
+tema
+  cor primaria roxo
+  estilo glassmorphism
+```
+
+Estilos: `glassmorphism`, `flat`, `neumorphism`, `minimal`
+
+### Exemplo Completo
+
+```
+tema moderno
+  cor primaria azul
+  cor destaque laranja
+  estilo glassmorphism
+  escuro
+```
+
+---
+
+## 18. Rotas e Paginas Customizadas
+
+### Rotas Customizadas
+
+O bloco `rotas` permite criar endpoints de API personalizados:
+
+```
+rotas
+  GET /api/relatorio/vendas
+    consultar "SELECT SUM(valor) as total FROM pedido WHERE status = 'pago'"
+
+  POST /api/acao/enviar-lembrete
+    corpo "cliente_id"
+    executar "UPDATE pedido SET lembrete = 1 WHERE cliente_id = ?"
+```
+
+Cada rota define:
+- Metodo HTTP e caminho
+- `consultar` para SELECT (retorna JSON)
+- `executar` para INSERT/UPDATE/DELETE
+- `corpo` para definir campos esperados no body
+
+### Paginas Customizadas
+
+O bloco `paginas` permite criar paginas HTML personalizadas:
+
+```
+paginas
+  pagina sobre
+    caminho "/sobre"
+    html """
+      <h1>Sobre a Empresa</h1>
+      <p>Fundada em 2024, nossa empresa...</p>
+    """
+
+  pagina termos
+    caminho "/termos"
+    html """
+      <h1>Termos de Uso</h1>
+      <p>Ao utilizar este servico...</p>
+    """
+```
+
+As paginas sao servidas no caminho definido e usam o layout do tema ativo.
+
+---
+
+## 19. Sidebar Personalizada
+
+O bloco `sidebar` permite controlar exatamente os itens da barra lateral:
+
+```
+sidebar
+  item "Dashboard" icone "home" link "/"
+  item "Produtos" icone "box" link "/produtos"
+  item "Clientes" icone "users" link "/clientes"
+  separador
+  item "Relatorios" icone "chart" link "/relatorios"
+  item "Configuracoes" icone "settings" link "/config"
+```
+
+### Sintaxe
+
+Cada `item` define:
+- Texto exibido (entre aspas)
+- `icone` - nome do icone
+- `link` - caminho da pagina
+
+Use `separador` para adicionar uma linha divisoria entre grupos de itens.
+
+### Exemplo com Tema
+
+```
+tema corporativo
+  cor sidebar escuro
+
+sidebar
+  item "Inicio" icone "home" link "/"
+  item "Vendas" icone "dollar" link "/vendas"
+  separador
+  item "Admin" icone "shield" link "/admin"
+```
+
+---
+
+## 20. Async e Paralelismo
+
+A v0.5.0 adiciona funcoes async para operacoes concorrentes:
+
+### paralelo()
+
+Executa multiplas funcoes em paralelo:
+
+```
+resultado = paralelo(buscar_clientes, buscar_produtos, buscar_pedidos)
+```
+
+### esperar()
+
+Aguarda o resultado de uma operacao async:
+
+```
+dados = chamar_async("GET", "https://api.externa.com/dados")
+resultado = esperar(dados)
+```
+
+### timeout()
+
+Define um tempo maximo para uma operacao:
+
+```
+resultado = timeout(operacao_lenta, 5000)  // 5 segundos
+```
+
+### chamar_async()
+
+Faz requisicoes HTTP sem bloquear:
+
+```
+resp = chamar_async("POST", "https://api.com/webhook")
+```
+
+### consultar_paralelo()
+
+Executa multiplas queries no banco em paralelo:
+
+```
+resultados = consultar_paralelo(
+  "SELECT COUNT(*) FROM cliente",
+  "SELECT SUM(valor) FROM pedido",
+  "SELECT AVG(preco) FROM produto"
+)
+```
+
+---
+
+## 21. flang build
+
+O comando `flang build` compila seu arquivo `.fg` em um executavel standalone:
+
+```bash
+flang build meuapp.fg
+```
+
+Isso gera um binario `meuapp` (ou `meuapp.exe` no Windows) que inclui:
+- O interpretador Flang
+- Seu arquivo `.fg` embutido
+- Todas as dependencias
+
+### Distribuicao
+
+O executavel gerado nao requer Go instalado na maquina de destino:
+
+```bash
+# Compilar
+flang build meuapp.fg
+
+# Copiar para o servidor
+scp meuapp user@server:~/
+
+# Executar no servidor
+ssh user@server "./meuapp"
+```
+
+### Build para outro sistema operacional
+
+```bash
+# Linux
+GOOS=linux flang build meuapp.fg
+
+# Windows
+GOOS=windows flang build meuapp.fg
+
+# macOS
+GOOS=darwin flang build meuapp.fg
+```
+
+---
+
+## 22. Multilingual
+
+O Flang v0.5.0 suporta 20 idiomas. Voce pode escrever seu `.fg` no idioma que preferir.
+
+### Exemplo em Espanhol
+
+```
+sistema mi_tienda
+
+datos
+  producto
+    nombre: texto obligatorio
+    precio: dinero
+
+pantallas
+  pantalla productos
+    titulo "Productos"
+    lista producto
+      mostrar nombre
+      mostrar precio
+    boton azul
+      texto "Nuevo Producto"
+
+eventos
+  cuando clic "Nuevo Producto"
+    crear producto
+```
+
+### Exemplo em Frances
+
+```
+systeme ma_boutique
+
+donnees
+  produit
+    nom: texte obligatoire
+    prix: argent
+```
+
+### Idiomas Suportados
+
+Portugues, Ingles, Espanhol, Frances, Alemao, Italiano, Chines, Japones, Coreano, Arabe, Hindi, Bengali, Russo, Indonesio, Turco, Vietnamita, Polones, Holandes, Tailandes, Suaili
+
+### Misturando Idiomas
+
+Voce pode misturar idiomas livremente no mesmo arquivo:
+
+```
+system minha_loja
+
+dados
+  product
+    nome: text required
+    preco: money
+```
+
+---
+
+## Proximos Passos
 
 - Explore os exemplos em `exemplos/`
 - Crie seu proprio projeto com `./flang new meu-projeto`
+- Use `flang build` para gerar executaveis
 - Contribua no [GitHub](https://github.com/flaviokalleu/flang)
 
 ---
 
 <p align="center">
-  <strong>Flang</strong> - Descreva. Execute. Pronto.
+  <strong>Flang v0.5.0</strong> - Descreva. Execute. Pronto.
 </p>

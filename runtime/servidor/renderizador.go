@@ -61,6 +61,33 @@ func (s *Servidor) renderHTML() string {
 	// Toast container
 	b.WriteString(`<div id="toast" class="toast"></div>`)
 
+	// Auth modal (login/register)
+	if s.Auth != nil {
+		loginField := "email"
+		passField := "senha"
+		if s.Program.Auth != nil {
+			if s.Program.Auth.LoginField != "" {
+				loginField = s.Program.Auth.LoginField
+			}
+			if s.Program.Auth.PassField != "" {
+				passField = s.Program.Auth.PassField
+			}
+		}
+		b.WriteString(`<div id="auth-modal" class="modal-overlay" style="display:none">`)
+		b.WriteString(`<div class="modal card" style="max-width:400px;padding:32px">`)
+		b.WriteString(`<h2 id="auth-title" style="margin:0 0 20px;text-align:center">Entrar</h2>`)
+		b.WriteString(`<form id="auth-form" onsubmit="authSubmit(event)">`)
+		b.WriteString(`<div id="auth-extra-fields"></div>`)
+		b.WriteString(fmt.Sprintf(`<div class="form-group"><label>%s</label><input type="text" id="auth-login" required class="form-input" placeholder="%s"></div>`, cap(loginField), loginField))
+		b.WriteString(fmt.Sprintf(`<div class="form-group"><label>%s</label><input type="password" id="auth-pass" required class="form-input" placeholder="%s" minlength="6"></div>`, cap(passField), passField))
+		b.WriteString(`<div id="auth-error" style="color:#ef4444;font-size:13px;margin:8px 0;display:none"></div>`)
+		b.WriteString(`<button type="submit" class="btn btn-glow" style="width:100%;margin-top:12px">Entrar</button>`)
+		b.WriteString(`<p style="text-align:center;margin:16px 0 0;font-size:13px;opacity:.7">`)
+		b.WriteString(`<span id="auth-toggle-text">Nao tem conta?</span> <a href="#" onclick="toggleAuthMode()" id="auth-toggle-link" style="color:var(--primary)">Criar conta</a></p>`)
+		b.WriteString(`<button type="button" onclick="fecharAuth()" class="btn" style="width:100%;margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,.1)">Cancelar</button>`)
+		b.WriteString(`</form></div></div>`)
+	}
+
 	// --- JavaScript ---
 	b.WriteString(`<script>`)
 	b.WriteString(s.generateJS(theme))
@@ -227,6 +254,14 @@ func (s *Servidor) renderTopbar() string {
 	b.WriteString(`</div>`)
 	b.WriteString(`<div class="tb-end">`)
 	b.WriteString(`<div class="tb-search"><input type="text" placeholder="Buscar..." id="global-search" oninput="buscaGlobal(this.value)">` + svgIcon("search") + `</div>`)
+	// Auth button
+	if s.Auth != nil {
+		b.WriteString(`<div id="auth-area">`)
+		b.WriteString(`<button class="btn btn-sm" id="btn-login" onclick="mostrarLogin()" style="margin-left:8px">` + svgIcon("user") + ` <span>Entrar</span></button>`)
+		b.WriteString(`<span id="user-info" style="display:none;margin-left:8px;font-size:13px;opacity:.8"></span>`)
+		b.WriteString(`<button class="btn btn-sm" id="btn-logout" onclick="sair()" style="display:none;margin-left:4px">Sair</button>`)
+		b.WriteString(`</div>`)
+	}
 	b.WriteString(`</div></header>`)
 	return b.String()
 }
@@ -890,6 +925,12 @@ body.dark .pill-blue{background:rgba(59,130,246,.15);color:#93c5fd}
 .btn-sm svg{width:14px;height:14px}
 
 /* ===== Modal ===== */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center}
+.modal-overlay[style*="flex"]{display:flex!important}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:.85rem;font-weight:500;margin-bottom:6px;opacity:.8}
+.form-input{width:100%;padding:10px 14px;border-radius:calc(var(--radius)*0.6);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;outline:none;transition:border .2s}
+.form-input:focus{border-color:var(--primary)}
 .modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);
   -webkit-backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;padding:20px}
 .modal-wrap.show{display:flex}
@@ -1675,6 +1716,125 @@ document.addEventListener('DOMContentLoaded',function(){
 		b.WriteString(fmt.Sprintf("  carregar('%s');\n", lo(model.Name)))
 	}
 	b.WriteString("});\n")
+
+	// Auth JS
+	if s.Auth != nil {
+		loginField := "email"
+		passField := "senha"
+		if s.Program.Auth != nil {
+			if s.Program.Auth.LoginField != "" {
+				loginField = s.Program.Auth.LoginField
+			}
+			if s.Program.Auth.PassField != "" {
+				passField = s.Program.Auth.PassField
+			}
+		}
+		b.WriteString(fmt.Sprintf(`
+// ===== Auth =====
+var authToken=localStorage.getItem('flang_token')||'';
+var authMode='login';
+var AUTH_LOGIN='%s',AUTH_PASS='%s';
+
+function authHeaders(){
+  var h={'Content-Type':'application/json'};
+  if(authToken)h['Authorization']='Bearer '+authToken;
+  return h;
+}
+
+// Override fetch to inject auth token
+var _fetch=window.fetch;
+window.fetch=function(url,opts){
+  opts=opts||{};
+  if(authToken&&url.startsWith('/api/')){
+    opts.headers=opts.headers||{};
+    if(typeof opts.headers==='object'&&!opts.headers['Authorization']){
+      opts.headers['Authorization']='Bearer '+authToken;
+    }
+  }
+  return _fetch(url,opts);
+};
+
+function mostrarLogin(){
+  $('auth-modal').style.display='flex';
+  authMode='login';
+  $('auth-title').textContent='Entrar';
+  $('auth-toggle-text').textContent='Nao tem conta?';
+  $('auth-toggle-link').textContent='Criar conta';
+  $('auth-error').style.display='none';
+  $('auth-extra-fields').innerHTML='';
+}
+function fecharAuth(){$('auth-modal').style.display='none';}
+function toggleAuthMode(){
+  if(authMode==='login'){
+    authMode='register';
+    $('auth-title').textContent='Criar Conta';
+    $('auth-toggle-text').textContent='Ja tem conta?';
+    $('auth-toggle-link').textContent='Entrar';
+    $('auth-extra-fields').innerHTML='<div class="form-group"><label>Nome</label><input type="text" id="auth-nome" required class="form-input" placeholder="Seu nome"></div>';
+  } else {
+    authMode='login';
+    $('auth-title').textContent='Entrar';
+    $('auth-toggle-text').textContent='Nao tem conta?';
+    $('auth-toggle-link').textContent='Criar conta';
+    $('auth-extra-fields').innerHTML='';
+  }
+  $('auth-error').style.display='none';
+}
+function authSubmit(e){
+  e.preventDefault();
+  var login=$('auth-login').value;
+  var pass=$('auth-pass').value;
+  var url=authMode==='login'?'/api/login':'/api/registro';
+  var body={};
+  body[AUTH_LOGIN]=login;
+  body[AUTH_PASS]=pass;
+  if(authMode==='register'){
+    var nome=$('auth-nome');
+    if(nome)body['nome']=nome.value;
+  }
+  _fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json().then(function(d){return{ok:r.ok,data:d};});})
+    .then(function(res){
+      if(!res.ok){
+        $('auth-error').textContent=res.data.erro||'Erro';
+        $('auth-error').style.display='block';
+        return;
+      }
+      authToken=res.data.token;
+      localStorage.setItem('flang_token',authToken);
+      fecharAuth();
+      updateAuthUI(res.data.login||login,res.data.role||'usuario');
+      toast(authMode==='login'?'Bem-vindo!':'Conta criada!');
+      // Reload all data with auth
+      Object.keys(M).forEach(function(m){carregar(m);});
+      carregarListasInline();
+      renderCharts();
+    });
+}
+function sair(){
+  authToken='';
+  localStorage.removeItem('flang_token');
+  $('btn-login').style.display='';
+  $('user-info').style.display='none';
+  $('btn-logout').style.display='none';
+  toast('Desconectado');
+}
+function updateAuthUI(login,role){
+  $('btn-login').style.display='none';
+  $('user-info').style.display='inline';
+  $('user-info').textContent=login+' ('+role+')';
+  $('btn-logout').style.display='inline';
+}
+// Check stored token on load
+if(authToken){
+  _fetch('/api/me',{headers:{'Authorization':'Bearer '+authToken}})
+    .then(function(r){return r.json();})
+    .then(function(d){if(d&&d.login)updateAuthUI(d.login,d.role||'usuario');else sair();})
+    .catch(function(){sair();});
+}
+`, loginField, passField))
+	}
+
 	return b.String()
 }
 

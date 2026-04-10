@@ -1,45 +1,57 @@
 # Flang — Especificação da Linguagem (Language Specification)
 
-> Versão 0.2.0 | Última atualização: 2026-04-09
+> Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
 ---
 
-## Sumário
+## Sumario
 
-1. [Visão Geral](#1-visão-geral)
+1. [Visao Geral](#1-visão-geral)
 2. [Formato de Arquivo](#2-formato-de-arquivo)
 3. [Sintaxe Fundamental](#3-sintaxe-fundamental)
 4. [Palavras-Chave Completas](#4-palavras-chave-completas)
-5. [Blocos de Nível Superior](#5-blocos-de-nível-superior)
+5. [Blocos de Nivel Superior](#5-blocos-de-nível-superior)
 6. [Tipos de Dados](#6-tipos-de-dados)
 7. [Modificadores de Campo](#7-modificadores-de-campo)
 8. [Relacionamentos](#8-relacionamentos)
 9. [Componentes de Tela](#9-componentes-de-tela)
 10. [Eventos](#10-eventos)
-11. [Lógica e Regras](#11-lógica-e-regras)
-12. [Autenticação](#12-autenticação)
-13. [Integrações](#13-integrações)
+11. [Logica e Regras](#11-lógica-e-regras)
+12. [Autenticacao](#12-autenticação)
+13. [Integracoes](#13-integrações)
 14. [Tema](#14-tema)
-15. [Sistema de Importação](#15-sistema-de-importação)
+15. [Sistema de Importacao](#15-sistema-de-importação)
 16. [Banco de Dados](#16-banco-de-dados)
 17. [Operadores](#17-operadores)
 18. [Palavras Reservadas](#18-palavras-reservadas)
-19. [Gramática Formal (EBNF)](#19-gramática-formal-ebnf)
+19. [Gramatica Formal (EBNF)](#19-gramática-formal-ebnf)
+20. [Idiomas Suportados](#20-idiomas-suportados)
+21. [Tema Presets e Cores por Nome](#21-tema-presets-e-cores-por-nome)
+22. [Enum com Valores](#22-enum-com-valores)
+23. [Rotas Customizadas](#23-rotas-customizadas)
+24. [Paginas Customizadas](#24-paginas-customizadas)
+25. [Sidebar Customizada](#25-sidebar-customizada)
+26. [Funcoes Async](#26-funcoes-async)
+27. [Array Indexing](#27-array-indexing)
 
 ---
 
 ## 1. Visão Geral
 
-Flang é uma linguagem de programação declarativa bilíngue (Português/Inglês) que gera aplicações full-stack completas a partir de arquivos `.fg`. Um único arquivo `.fg` descreve modelos de dados, telas, eventos, autenticação, integrações e configurações de banco de dados — e o motor Flang (escrito em Go) gera e executa tudo automaticamente.
+Flang e uma linguagem de programacao declarativa multilingual (20 idiomas) que gera aplicacoes full-stack completas a partir de arquivos `.fg`. Um unico arquivo `.fg` descreve modelos de dados, telas, eventos, autenticacao, integracoes e configuracoes de banco de dados — e o motor Flang (escrito em Go) gera e executa tudo automaticamente.
 
-**Características principais:**
-- Sintaxe declarativa baseada em indentação (sem chaves, sem ponto-e-vírgula)
-- Bilíngue: cada palavra-chave existe em Português e em Inglês
+**Caracteristicas principais:**
+- Sintaxe declarativa baseada em indentacao (sem chaves, sem ponto-e-virgula)
+- 20 idiomas suportados (Portugues, Ingles, Espanhol, Frances, Alemao, etc.)
 - API REST gerada automaticamente para cada modelo
-- Banco de dados integrado (SQLite padrão, PostgreSQL e MySQL suportados)
+- Banco de dados integrado (SQLite padrao, PostgreSQL e MySQL suportados)
 - Servidor web embutido com WebSocket
-- Autenticação JWT com bcrypt integrada
-- Suporte a Soft Delete, paginação, filtros, busca e exportação
+- Autenticacao JWT com bcrypt integrada
+- Suporte a Soft Delete, paginacao, filtros, busca e exportacao
+- Tema presets, cores por nome, 4 estilos visuais
+- Rotas e paginas customizadas
+- Funcoes async e paralelismo
+- Compilacao para executavel standalone (`flang build`)
 
 ---
 
@@ -537,17 +549,25 @@ integracoes
 
 ### 5.9 `tema` / `theme`
 
-Personaliza a aparência visual.
+Personaliza a aparencia visual. Suporta presets, cores por nome, cores hex e estilos visuais.
 
-**Gramática:**
+**Gramatica:**
 ```
-tema_block = "tema" NEWLINE tema_item*
-tema_item  = "cor" COLOR_NAME STRING
+tema_block = "tema" [PRESET] NEWLINE tema_item*
+tema_item  = "cor" COLOR_NAME (STRING | COLOR_WORD)
+           | "estilo" STYLE_NAME
            | "escuro"
            | "icone" STRING
 ```
 
-**Exemplo:**
+**Presets disponiveis:** `moderno`, `simples`, `elegante`, `corporativo`, `claro`
+
+**Exemplo com preset:**
+```flang
+tema moderno
+```
+
+**Exemplo com cores hex:**
 ```flang
 tema
   cor primaria "#6366f1"
@@ -558,12 +578,24 @@ tema
   icone "rocket"
 ```
 
-**Cores de tema disponíveis:**
+**Exemplo com cores por nome:**
+```flang
+tema
+  cor primaria azul
+  cor destaque laranja
+  estilo glassmorphism
+```
 
-| Chave PT | Chave EN | Descrição |
+**Nomes de cor disponiveis:** `azul`, `verde`, `vermelho`, `roxo`, `laranja`, `amarelo`, `rosa`, `escuro`, `claro`
+
+**Estilos visuais:** `glassmorphism`, `flat`, `neumorphism`, `minimal`
+
+**Chaves de cor:**
+
+| Chave PT | Chave EN | Descricao |
 |---|---|---|
 | `primaria` | `primary` | Cor principal |
-| `secundaria` | `secondary` | Cor secundária |
+| `secundaria` | `secondary` | Cor secundaria |
 | `destaque` | `accent` | Cor de destaque |
 | `sidebar` | `sidebar` | Cor da barra lateral |
 
@@ -589,7 +621,20 @@ tema
 | `dinheiro` | `money` / `currency` | `REAL` | `REAL` | `<input type="number">` | — |
 | `senha` | `password` | `TEXT` | `VARCHAR(500)` | `<input type="password">` | Mín. 6 chars |
 | `texto_longo` | `long_text` | `TEXT` | `VARCHAR(500)` | `<textarea>` | — |
-| `enum` | `enum` | `TEXT` | `VARCHAR(500)` | `<select>` | — |
+| `enum` | `enum` | `TEXT` | `VARCHAR(500)` | `<select>` | Valores definidos |
+
+### Enum com Valores
+
+A partir da v0.5.0, enums suportam lista de valores entre parenteses:
+
+```flang
+dados
+  pedido
+    status: enum(pendente, aprovado, enviado, entregue, cancelado)
+    prioridade: enum(baixa, media, alta)
+```
+
+O formulario gerado renderiza um `<select>` com as opcoes definidas.
 
 ### Notas de Tipo
 
@@ -664,14 +709,13 @@ Isso gera:
 
 ### 8.2 `tem_muitos` / `has_many` — Um para Muitos (1→N)
 
-Declaração semântica no modelo pai (não cria coluna extra, a FK fica no filho).
+Declaracao semantica no modelo pai. Nao cria coluna extra — a FK fica no filho. O Flang gera automaticamente o endpoint de expansao `GET /api/{modelo}/{id}/{relacao}`.
 
 ```flang
 dados
 
   cliente
     nome: texto
-    // tem_muitos pedido  -- referência semântica
     pedidos: tem_muitos pedido
 
   pedido
@@ -679,7 +723,15 @@ dados
     cliente_id: numero pertence_a cliente
 ```
 
+Exemplo de uso via API:
+```bash
+# Buscar todos os pedidos do cliente 1
+GET /api/cliente/1/pedidos
+```
+
 ### 8.3 `muitos_para_muitos` / `many_to_many` — N→N
+
+Cria automaticamente uma join table intermediaria. Por exemplo, `produto_categoria` com colunas `produto_id` e `categoria_id`.
 
 ```flang
 dados
@@ -690,6 +742,16 @@ dados
 
   categoria
     nome: texto
+    produtos: muitos_para_muitos produto
+```
+
+Join table gerada automaticamente:
+```sql
+CREATE TABLE IF NOT EXISTS "produto_categoria" (
+  "produto_id" INTEGER REFERENCES "produto"("id"),
+  "categoria_id" INTEGER REFERENCES "categoria"("id"),
+  PRIMARY KEY ("produto_id", "categoria_id")
+);
 ```
 
 ---
@@ -1359,4 +1421,240 @@ SPACE           = ' ' | '\t'
 DIGIT           = '0'..'9'
 LETTER          = 'a'..'z' | 'A'..'Z' | unicode_letter
 IDENTIFIER      = (LETTER | '_') (LETTER | DIGIT | '_')*
+
+rotas_block     = "rotas" NEWLINE route+
+route           = METHOD PATH NEWLINE route_item*
+route_item      = "consultar" STRING NEWLINE
+                | "executar" STRING NEWLINE
+                | "corpo" STRING NEWLINE
+
+paginas_block   = "paginas" NEWLINE pagina+
+pagina          = "pagina" name NEWLINE pagina_item*
+pagina_item     = "caminho" STRING NEWLINE
+                | "html" STRING NEWLINE
+
+sidebar_block   = "sidebar" NEWLINE sidebar_item*
+sidebar_item    = "item" STRING ("icone" STRING)? ("link" STRING)? NEWLINE
+                | "separador" NEWLINE
 ```
+
+---
+
+## 20. Idiomas Suportados
+
+O Flang v0.5.0 suporta 20 idiomas. Cada idioma tem seu proprio conjunto de palavras-chave que mapeiam para os mesmos tokens internos.
+
+| # | Idioma | Exemplo `sistema` | Exemplo `dados` |
+|---|--------|-------------------|-----------------|
+| 1 | Portugues | `sistema` | `dados` |
+| 2 | Ingles | `system` | `models` |
+| 3 | Espanhol | `sistema` | `datos` |
+| 4 | Frances | `systeme` | `donnees` |
+| 5 | Alemao | `system` | `daten` |
+| 6 | Italiano | `sistema` | `dati` |
+| 7 | Chines | 系统 | 数据 |
+| 8 | Japones | システム | データ |
+| 9 | Coreano | 시스템 | 데이터 |
+| 10 | Arabe | نظام | بيانات |
+| 11 | Hindi | प्रणाली | डेटा |
+| 12 | Bengali | সিস্টেম | ডেটা |
+| 13 | Russo | система | данные |
+| 14 | Indonesio | sistem | data |
+| 15 | Turco | sistem | veriler |
+| 16 | Vietnamita | he_thong | du_lieu |
+| 17 | Polones | system | dane |
+| 18 | Holandes | systeem | gegevens |
+| 19 | Tailandes | ระบบ | ข้อมูล |
+| 20 | Suaili | mfumo | data |
+
+Todos os idiomas podem ser misturados livremente no mesmo arquivo.
+
+---
+
+## 21. Tema Presets e Cores por Nome
+
+### Presets
+
+Presets sao configuracoes de tema pre-definidas que podem ser aplicadas com uma unica linha:
+
+```flang
+tema moderno
+```
+
+| Preset | Estilo | Descricao |
+|--------|--------|-----------|
+| `moderno` | glassmorphism | Gradientes, transparencia, sombras suaves |
+| `simples` | flat | Clean, sem distracao, cores solidas |
+| `elegante` | serif | Tipografia refinada, espacamento generoso |
+| `corporativo` | dark sidebar | Visual profissional, sidebar escura |
+| `claro` | light | Fundo branco, cores leves e acessiveis |
+
+### Cores por Nome
+
+Alem de valores hex, cores podem ser definidas por nome:
+
+```flang
+tema
+  cor primaria azul
+```
+
+| Nome | Hex Aproximado |
+|------|---------------|
+| `azul` | `#3b82f6` |
+| `verde` | `#10b981` |
+| `vermelho` | `#ef4444` |
+| `roxo` | `#8b5cf6` |
+| `laranja` | `#f97316` |
+| `amarelo` | `#f59e0b` |
+| `rosa` | `#ec4899` |
+| `escuro` | `#1e1b4b` |
+| `claro` | `#f8fafc` |
+
+### Estilos Visuais
+
+```flang
+tema
+  estilo glassmorphism
+```
+
+| Estilo | Descricao |
+|--------|-----------|
+| `glassmorphism` | Fundo translucido com blur, bordas de vidro |
+| `flat` | Sem sombras, cores solidas, bordas definidas |
+| `neumorphism` | Relevo suave, sombras internas e externas |
+| `minimal` | Espacamento amplo, poucos elementos visuais |
+
+---
+
+## 22. Enum com Valores
+
+Enums podem ser declarados com uma lista de valores entre parenteses:
+
+```flang
+dados
+  tarefa
+    status: enum(aberta, em_progresso, concluida, cancelada)
+    prioridade: enum(baixa, media, alta, critica)
+```
+
+**Sintaxe:**
+```
+field = name ":" "enum" "(" value ("," value)* ")"
+value = IDENTIFIER
+```
+
+O formulario HTML gerado renderiza um `<select>` com cada valor como `<option>`. A validacao no backend garante que apenas os valores definidos sejam aceitos.
+
+---
+
+## 23. Rotas Customizadas
+
+O bloco `rotas` permite definir endpoints de API personalizados alem dos CRUD automaticos.
+
+```flang
+rotas
+
+  GET /api/relatorio/vendas-mensais
+    consultar "SELECT strftime('%Y-%m', criado_em) as mes, SUM(valor) as total FROM pedido GROUP BY mes"
+
+  POST /api/acao/aprovar-pedido
+    corpo "pedido_id"
+    executar "UPDATE pedido SET status = 'aprovado' WHERE id = ?"
+```
+
+**Sintaxe:**
+- Linha de rota: `METODO /caminho/da/rota`
+- `consultar` - executa SELECT e retorna resultado como JSON
+- `executar` - executa INSERT/UPDATE/DELETE
+- `corpo` - define campos esperados no body JSON (usados como parametros `?`)
+
+---
+
+## 24. Paginas Customizadas
+
+O bloco `paginas` permite criar paginas HTML servidas pelo Flang.
+
+```flang
+paginas
+
+  pagina sobre
+    caminho "/sobre"
+    html """
+      <h1>Sobre</h1>
+      <p>Nossa empresa foi fundada em 2024.</p>
+    """
+```
+
+**Sintaxe:**
+- `pagina <nome>` - identificador da pagina
+- `caminho "<path>"` - URL onde a pagina sera servida
+- `html "<conteudo>"` - conteudo HTML da pagina (suporta strings multiline com `"""`)
+
+As paginas utilizam o layout e tema da aplicacao automaticamente.
+
+---
+
+## 25. Sidebar Customizada
+
+O bloco `sidebar` permite definir a estrutura da barra lateral do frontend.
+
+```flang
+sidebar
+  item "Dashboard" icone "home" link "/"
+  item "Produtos" icone "box" link "/produtos"
+  separador
+  item "Config" icone "settings" link "/config"
+```
+
+**Sintaxe:**
+- `item "<texto>" icone "<nome>" link "<caminho>"` - item de menu
+- `separador` - linha divisoria entre grupos
+
+Quando o bloco `sidebar` nao esta presente, a sidebar e gerada automaticamente a partir das telas definidas.
+
+---
+
+## 26. Funcoes Async
+
+O Flang v0.5.0 adiciona funcoes built-in para operacoes assincronas:
+
+| Funcao | Descricao | Exemplo |
+|--------|-----------|---------|
+| `paralelo()` | Executa funcoes em paralelo | `paralelo(f1, f2, f3)` |
+| `esperar()` | Aguarda resultado async | `esperar(promessa)` |
+| `timeout()` | Define tempo maximo | `timeout(func, 5000)` |
+| `chamar_async()` | HTTP request async | `chamar_async("GET", url)` |
+| `consultar_paralelo()` | Queries em paralelo | `consultar_paralelo(q1, q2)` |
+
+Exemplo de uso:
+
+```flang
+logica
+  resultados = consultar_paralelo(
+    "SELECT COUNT(*) FROM cliente",
+    "SELECT SUM(valor) FROM pedido"
+  )
+```
+
+---
+
+## 27. Array Indexing
+
+O Flang v0.5.0 suporta acesso a elementos de arrays e campos aninhados por indice:
+
+```flang
+arr = [10, 20, 30]
+primeiro = arr[0]           // 10
+ultimo = arr[2]             // 30
+
+obj = {"itens": [1, 2, 3]}
+item = obj.itens[0]         // 1
+```
+
+**Sintaxe:**
+```
+array_access = name "[" NUMBER "]"
+nested_access = name "." name "[" NUMBER "]"
+```
+
+Indices comecam em 0. Acesso fora dos limites retorna `nulo` / `null`.

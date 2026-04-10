@@ -1,26 +1,30 @@
 # Flang — Referência da API REST (API Reference)
 
-> Versão 0.2.0 | Última atualização: 2026-04-09
+> Versao 0.5.0 | Ultima atualizacao: 2026-04-10
 
 ---
 
 ## Sumário
 
-1. [Visão Geral](#1-visão-geral)
-2. [Autenticação](#2-autenticação)
+1. [Visao Geral](#1-visão-geral)
+2. [Autenticacao](#2-autenticação)
 3. [Endpoints de Modelos (CRUD)](#3-endpoints-de-modelos-crud)
-4. [Parâmetros de Query](#4-parâmetros-de-query)
+4. [Parametros de Query](#4-parâmetros-de-query)
 5. [Formato de Resposta](#5-formato-de-resposta)
-6. [Endpoints de Autenticação](#6-endpoints-de-autenticação)
+6. [Endpoints de Autenticacao](#6-endpoints-de-autenticação)
 7. [Endpoints Especiais](#7-endpoints-especiais)
-8. [Exportação de Dados](#8-exportação-de-dados)
-9. [Soft Delete e Restauração](#9-soft-delete-e-restauração)
+8. [Exportacao de Dados](#8-exportação-de-dados)
+9. [Soft Delete e Restauracao](#9-soft-delete-e-restauração)
 10. [Upload de Arquivos](#10-upload-de-arquivos)
 11. [WebSocket](#11-websocket)
 12. [Proxy de API](#12-proxy-de-api)
 13. [Erros](#13-erros)
-14. [Cabeçalhos HTTP](#14-cabeçalhos-http)
-15. [Referência Rápida (Tabela)](#15-referência-rápida-tabela)
+14. [Cabecalhos HTTP](#14-cabeçalhos-http)
+15. [Referencia Rapida (Tabela)](#15-referência-rápida-tabela)
+16. [Rotas Customizadas](#16-rotas-customizadas)
+17. [Relacionamentos (Expansao)](#17-relacionamentos-expansao)
+18. [Rate Limiting](#18-rate-limiting)
+19. [Limites de Body](#19-limites-de-body)
 
 ---
 
@@ -1153,13 +1157,14 @@ Todas as respostas de erro seguem o padrão:
 
 ### Rotas CRUD por Modelo
 
-| Método | Rota | Descrição | Auth Necessária |
+| Metodo | Rota | Descricao | Auth Necessaria |
 |---|---|---|---|
-| `GET` | `/api/{modelo}` | Listar registros | Não (GET público) |
-| `GET` | `/api/{modelo}/{id}` | Buscar por ID | Não (GET público) |
+| `GET` | `/api/{modelo}` | Listar registros | Nao (GET publico) |
+| `GET` | `/api/{modelo}/{id}` | Buscar por ID | Nao (GET publico) |
 | `POST` | `/api/{modelo}` | Criar registro | Sim |
 | `PUT` | `/api/{modelo}/{id}` | Atualizar registro | Sim |
 | `DELETE` | `/api/{modelo}/{id}` | Deletar registro | Sim |
+| `GET` | `/api/{modelo}/{id}/{relacao}` | Expandir relacionamento | Nao (GET publico) |
 | `GET` | `/api/{modelo}/export/csv` | Exportar CSV | Sim |
 | `GET` | `/api/{modelo}/export/json` | Exportar JSON | Sim |
 | `PUT` | `/api/{modelo}/{id}/restaurar` | Restaurar (soft delete) | Sim |
@@ -1191,3 +1196,139 @@ Todas as respostas de erro seguem o padrão:
 | `busca` / `search` | string | — | `GET /api/{modelo}` |
 | `{campo}` | string | — | `GET /api/{modelo}` |
 | `token` | string | — | Qualquer rota autenticada |
+
+---
+
+## 16. Rotas Customizadas
+
+A partir da v0.5.0, o bloco `rotas` no arquivo `.fg` permite definir endpoints personalizados alem dos CRUD automaticos.
+
+### 16.1 Rota GET Customizada
+
+```
+GET /api/relatorio/vendas
+```
+
+**curl:**
+```bash
+curl http://localhost:8080/api/relatorio/vendas \
+  -H "Authorization: Bearer SEU_TOKEN"
+```
+
+**Resposta (200 OK):**
+```json
+[
+  {"mes": "2026-01", "total": 15420.50},
+  {"mes": "2026-02", "total": 22100.00}
+]
+```
+
+### 16.2 Rota POST Customizada
+
+```
+POST /api/acao/aprovar-pedido
+```
+
+**curl:**
+```bash
+curl -X POST http://localhost:8080/api/acao/aprovar-pedido \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer SEU_TOKEN" \
+  -d '{"pedido_id": 42}'
+```
+
+**Resposta (200 OK):**
+```json
+{"message": "OK", "affected": 1}
+```
+
+### 16.3 Autenticacao
+
+Rotas customizadas seguem as mesmas regras de autenticacao da API principal:
+- GET: publico por padrao (se auth configurada)
+- POST/PUT/DELETE: requer token JWT
+
+---
+
+## 17. Relacionamentos (Expansao)
+
+### 17.1 Expandir Relacionamento
+
+```
+GET /api/{modelo}/{id}/{relacao}
+```
+
+Retorna os registros relacionados a um registro especifico.
+
+**Exemplo:** Buscar todos os pedidos do cliente 1:
+
+```bash
+curl http://localhost:8080/api/cliente/1/pedidos
+```
+
+**Resposta (200 OK):**
+```json
+[
+  {"id": 10, "valor": 150.00, "status": "pago", "cliente_id": 1, "criado_em": "..."},
+  {"id": 15, "valor": 89.90, "status": "pendente", "cliente_id": 1, "criado_em": "..."}
+]
+```
+
+**Resposta (404 Not Found) — registro nao existe:**
+```json
+{"erro": "registro 99 nao encontrado"}
+```
+
+**Resposta (400 Bad Request) — relacao nao existe:**
+```json
+{"erro": "relacao 'xyz' nao encontrada no modelo 'cliente'"}
+```
+
+### 17.2 Relacionamentos Suportados
+
+| Tipo | Exemplo de Rota | Descricao |
+|------|----------------|-----------|
+| `tem_muitos` | `GET /api/cliente/1/pedidos` | Retorna registros filhos |
+| `muitos_para_muitos` | `GET /api/produto/1/categorias` | Retorna registros via join table |
+
+---
+
+## 18. Rate Limiting
+
+A partir da v0.5.0, o Flang inclui rate limiting nativo.
+
+### Limites
+
+| Metodo | Limite | Janela |
+|--------|--------|--------|
+| POST | 100 requisicoes | 1 minuto |
+| PUT | 100 requisicoes | 1 minuto |
+| DELETE | 100 requisicoes | 1 minuto |
+| GET | sem limite | — |
+
+### Resposta quando limite excedido
+
+**Resposta (429 Too Many Requests):**
+```json
+{"erro": "limite de requisicoes excedido, tente novamente em 1 minuto"}
+```
+
+### Headers de Rate Limiting
+
+O servidor nao retorna headers `X-RateLimit-*` nesta versao. O rate limiter usa limpeza automatica periodica para liberar memoria.
+
+---
+
+## 19. Limites de Body
+
+Requisicoes POST e PUT tem limite de tamanho de body:
+
+| Tipo | Limite |
+|------|--------|
+| JSON body (POST/PUT) | 1 MB |
+| Upload multipart | 32 MB |
+
+**Resposta quando limite excedido (413 Payload Too Large):**
+```json
+{"erro": "tamanho do body excede o limite de 1MB"}
+```

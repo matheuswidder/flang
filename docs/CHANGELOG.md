@@ -6,6 +6,51 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## v0.5.0 (2026-04-10)
+
+### Novidades
+- **20 Idiomas**: Portugues, Ingles, Espanhol, Frances, Alemao, Italiano, Chines, Japones, Coreano, Arabe, Hindi, Bengali, Russo, Indonesio, Turco, Vietnamita, Polones, Holandes, Tailandes, Suaili
+- **Tema Presets**: `tema moderno`, `tema simples`, `tema elegante`, `tema corporativo`, `tema claro`
+- **Cores por nome**: `cor primaria azul` (sem hex)
+- **4 estilos visuais**: glassmorphism, flat, neumorphism, minimal
+- **Rotas customizadas**: bloco `rotas` para endpoints de API personalizados
+- **Paginas customizadas**: bloco `paginas` para paginas HTML personalizadas
+- **Sidebar customizavel**: bloco `sidebar` com icones e links
+- **Email HTML**: deteccao automatica de HTML no corpo do email
+- **Enum com valores**: `status: enum(ativo, inativo, pendente)`
+- **FK Dropdowns**: campos com `pertence_a` renderizam select populado automaticamente
+- **textarea**: `texto_longo` renderiza como textarea
+- **Charts**: graficos com Chart.js (barra, pizza, doughnut)
+- **Relacionamentos**: `tem_muitos` e `muitos_para_muitos` com join tables automaticas
+- **Auto-migration**: colunas novas adicionadas automaticamente
+- **`flang build`**: compila .fg em executavel standalone distribuivel
+- **Async**: `paralelo()`, `esperar()`, `timeout()`, `chamar_async()`, `consultar_paralelo()`
+- **15 novos built-in functions**: substituir, cortar, comeca_com, termina_com, substring, adicionar, remover, reverter, chaves, valores, json, formato_data, potencia, raiz, chamar/http
+- **Array indexing**: `arr[0]`, `obj.campo[0]`
+
+### Seguranca
+- Auth bypass corrigido
+- Protecao SSRF no proxy
+- `/api/_eval` requer admin
+- XSS escaping em valores do usuario
+- Prevencao de path traversal em imports
+- Whitelist de extensoes em upload
+- Limites de body (1MB POST/PUT)
+- JWT secret via env variable
+- Protecao contra CSV injection
+
+### Performance
+- Connection pooling no banco (25 max, 5 idle)
+- Timeouts no servidor HTTP (15s read, 30s write)
+- Limpeza automatica do rate limiter
+- Cache de HTML
+
+### Testes
+- 59 testes (lexer, parser, AST, interpreter)
+- Todos passando
+
+---
+
 ## [0.4.0] - 2025 Q1
 
 ### Visao Geral
@@ -250,32 +295,6 @@ A versao inicial do Flang como **gerador de codigo**. O arquivo `.fg` era proces
 ---
 
 ## Roadmap
-
-### [0.5.0] - Planejado
-
-#### Integracoes
-- [ ] Suporte a pagamentos: Stripe, Mercado Pago, PagSeguro
-- [ ] WhatsApp: envio de imagens, documentos e botoes interativos
-- [ ] Email HTML (nao apenas texto puro)
-- [ ] Webhook de saida configuravel
-
-#### Linguagem
-- [ ] `${ENV_VAR}` — interpolacao de variaveis de ambiente no `.fg`
-- [ ] Suporte a `funcao` / `function` com corpo de logica
-- [ ] `para_cada` / `for_each` para iteracao em acoes
-- [ ] `tentar` / `try` para tratamento de erros
-- [ ] Enum com valores configurados: `categoria: enum ["A", "B", "C"]`
-
-#### Runtime
-- [ ] Refresh tokens para JWT (expiracao sem logout forcado)
-- [ ] Rate limiting nativo (sem Nginx)
-- [ ] Health check endpoint `/health`
-- [ ] Metricas basicas `/metrics` (Prometheus-compatible)
-
-#### DevOps
-- [ ] `flang deploy` — deploy direto para cloud providers
-- [ ] Suporte a Kubernetes (Helm chart)
-- [ ] CI/CD templates para GitHub Actions
 
 ### [0.6.0] - Visao Futura
 

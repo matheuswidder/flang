@@ -6,18 +6,65 @@ Este documento descreve todos os mecanismos de seguranca do Flang: autenticacao,
 
 ## Indice
 
-1. [Sistema de Autenticacao](#sistema-de-autenticacao)
-2. [Como o JWT Funciona no Flang](#como-o-jwt-funciona-no-flang)
-3. [Rotas Protegidas vs Publicas](#rotas-protegidas-vs-publicas)
-4. [Roles e Permissoes](#roles-e-permissoes)
-5. [Validacao de Entrada](#validacao-de-entrada)
-6. [Protecao contra XSS](#protecao-contra-xss)
-7. [Prevencao de SQL Injection](#prevencao-de-sql-injection)
-8. [Headers de Seguranca](#headers-de-seguranca)
-9. [Configuracao de CORS](#configuracao-de-cors)
-10. [Senhas e Bcrypt](#senhas-e-bcrypt)
-11. [Variaveis de Ambiente](#variaveis-de-ambiente)
-12. [Boas Praticas](#boas-praticas)
+1. [Correcoes de Seguranca v0.5.0](#correcoes-de-seguranca-v050)
+2. [Sistema de Autenticacao](#sistema-de-autenticacao)
+3. [Como o JWT Funciona no Flang](#como-o-jwt-funciona-no-flang)
+4. [Rotas Protegidas vs Publicas](#rotas-protegidas-vs-publicas)
+5. [Roles e Permissoes](#roles-e-permissoes)
+6. [Validacao de Entrada](#validacao-de-entrada)
+7. [Protecao contra XSS](#protecao-contra-xss)
+8. [Prevencao de SQL Injection](#prevencao-de-sql-injection)
+9. [Headers de Seguranca](#headers-de-seguranca)
+10. [Configuracao de CORS](#configuracao-de-cors)
+11. [Senhas e Bcrypt](#senhas-e-bcrypt)
+12. [Variaveis de Ambiente](#variaveis-de-ambiente)
+13. [Boas Praticas](#boas-praticas)
+
+---
+
+## Correcoes de Seguranca v0.5.0
+
+A versao 0.5.0 inclui 9 correcoes de seguranca importantes:
+
+### 1. Auth Bypass Corrigido
+
+Corrigido um cenario onde certas rotas de API podiam ser acessadas sem token JWT valido quando o header `Authorization` continha um formato inesperado. Agora todas as rotas protegidas validam rigorosamente o formato `Bearer <token>`.
+
+### 2. Protecao SSRF no Proxy
+
+O endpoint `/api/_proxy` agora valida URLs de destino para impedir Server-Side Request Forgery (SSRF). URLs apontando para enderecos internos (`127.0.0.1`, `localhost`, `10.x.x.x`, `192.168.x.x`, `169.254.x.x`) sao bloqueadas.
+
+### 3. `/api/_eval` Requer Admin
+
+O endpoint de avaliacao de expressoes (`/api/_eval`) agora exige autenticacao com role `admin`. Anteriormente podia ser acessado por qualquer usuario autenticado.
+
+### 4. XSS Escaping em Valores do Usuario
+
+Todos os valores inseridos por usuarios sao agora sanitizados com escaping HTML antes de serem renderizados no frontend. Caracteres `<`, `>`, `"`, `'` e `&` sao convertidos para entidades HTML.
+
+### 5. Prevencao de Path Traversal em Imports
+
+A instrucao `importar` agora valida caminhos de arquivo para impedir acesso a arquivos fora do diretorio do projeto. Sequencias como `../` e caminhos absolutos sao rejeitados.
+
+### 6. Whitelist de Extensoes em Upload
+
+O endpoint `/upload` agora aceita apenas extensoes de arquivo permitidas: `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.csv`, `.txt`, `.zip`. Arquivos com extensoes nao permitidas sao rejeitados com erro 400.
+
+### 7. Limites de Body (1MB POST/PUT)
+
+Requisicoes POST e PUT agora tem um limite de tamanho de body de 1MB. Requisicoes maiores retornam erro 413 (Payload Too Large). Uploads de arquivo mantem o limite de 32MB via multipart.
+
+### 8. JWT Secret via Env Variable
+
+O JWT secret agora pode ser configurado via variavel de ambiente `FLANG_JWT_SECRET`, que tem prioridade sobre o valor definido no arquivo `.fg`. Isso evita que segredos sejam commitados no codigo-fonte.
+
+```bash
+FLANG_JWT_SECRET="minha-chave-secreta-64-chars" flang run app.fg
+```
+
+### 9. Protecao contra CSV Injection
+
+A exportacao CSV agora sanitiza valores que comecam com `=`, `+`, `-`, `@`, `|` ou `\t`, prefixando-os com aspas simples para prevenir ataques de formula injection em planilhas.
 
 ---
 
@@ -691,10 +738,12 @@ CREATE USER 'flang_app'@'localhost' IDENTIFIED BY 'senha-forte';
 GRANT SELECT, INSERT, UPDATE, DELETE ON minha_loja.* TO 'flang_app'@'localhost';
 ```
 
-### 6. Configure Rate Limiting no Reverse Proxy
+### 6. Rate Limiting Nativo
+
+A partir da v0.5.0, o Flang inclui rate limiting nativo: 100 requisicoes POST por minuto por IP. Nao e mais necessario configurar no reverse proxy, mas voce pode adicionar limites extras:
 
 ```nginx
-# Nginx
+# Nginx (opcional, para protecao adicional)
 limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
 
 location /api/ {
