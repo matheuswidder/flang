@@ -9,8 +9,7 @@ import (
 )
 
 // renderHTML generates the full single-page application HTML.
-// It uses CSS variables derived from the Theme so users can control
-// every visual aspect via their .fg file.
+// Uses Tailwind CSS via CDN for a modern, clean design inspired by Flowise/Material UI.
 func (s *Servidor) renderHTML() string {
 	theme := s.Program.Theme
 	if theme == nil {
@@ -26,23 +25,41 @@ func (s *Servidor) renderHTML() string {
 	var b strings.Builder
 
 	// --- Head ---
-	b.WriteString(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+	b.WriteString(`<!DOCTYPE html><html lang="pt-BR" class="` + darkClass + `"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>` + html.EscapeString(cap(s.Program.System.Name)) + `</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=` + strings.ReplaceAll(theme.Font, " ", "+") + `:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: '` + theme.Primary + `',
+        secondary: '` + theme.Secondary + `',
+        accent: '` + theme.Accent + `',
+      },
+      fontFamily: {
+        sans: ['` + theme.Font + `', 'system-ui', '-apple-system', 'sans-serif'],
+      }
+    }
+  }
+}
+</script>
 <style>`)
 	b.WriteString(s.generateCSS(theme))
-	b.WriteString(`</style></head><body class="` + darkClass + `">`)
+	b.WriteString(`</style></head><body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans flex min-h-screen transition-colors duration-300">`)
 
 	// --- Sidebar ---
 	b.WriteString(s.renderSidebar(theme))
 
 	// --- Main area ---
-	b.WriteString(`<div class="main" id="main">`)
+	b.WriteString(`<main class="flex-1 ml-64 min-h-screen transition-all duration-300" id="main">`)
 	b.WriteString(s.renderTopbar())
-	b.WriteString(`<div class="content">`)
+	b.WriteString(`<div class="p-6" id="content">`)
 
 	// Dashboard section
 	b.WriteString(s.renderDashboard(theme))
@@ -56,7 +73,7 @@ func (s *Servidor) renderHTML() string {
 		s.renderModelSection(&b, model, theme)
 	}
 
-	b.WriteString(`</div></div>`) // content, main
+	b.WriteString(`</div></main>`) // content, main
 
 	// Modal forms - rendered OUTSIDE content/main so they're never hidden by display:none parents
 	for _, model := range s.Program.Models {
@@ -64,7 +81,7 @@ func (s *Servidor) renderHTML() string {
 	}
 
 	// Toast container
-	b.WriteString(`<div id="toast" class="toast"></div>`)
+	b.WriteString(`<div id="toast" class="fixed bottom-4 right-4 z-[10000] bg-gray-800 dark:bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none"></div>`)
 
 	// Auth modal (login/register)
 	if s.Auth != nil {
@@ -78,18 +95,18 @@ func (s *Servidor) renderHTML() string {
 				passField = s.Program.Auth.PassField
 			}
 		}
-		b.WriteString(`<div id="auth-modal" class="modal-overlay" style="display:none">`)
-		b.WriteString(`<div class="modal card" style="max-width:400px;padding:32px">`)
-		b.WriteString(`<h2 id="auth-title" style="margin:0 0 20px;text-align:center">Entrar</h2>`)
+		b.WriteString(`<div id="auth-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4">`)
+		b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-md shadow-2xl p-8">`)
+		b.WriteString(`<h2 id="auth-title" class="text-xl font-bold text-center mb-6">Entrar</h2>`)
 		b.WriteString(`<form id="auth-form" onsubmit="authSubmit(event)">`)
 		b.WriteString(`<div id="auth-extra-fields"></div>`)
-		b.WriteString(fmt.Sprintf(`<div class="form-group"><label>%s</label><input type="text" id="auth-login" required class="form-input" placeholder="%s"></div>`, cap(loginField), loginField))
-		b.WriteString(fmt.Sprintf(`<div class="form-group"><label>%s</label><input type="password" id="auth-pass" required class="form-input" placeholder="%s" minlength="6"></div>`, cap(passField), passField))
-		b.WriteString(`<div id="auth-error" style="color:#ef4444;font-size:13px;margin:8px 0;display:none"></div>`)
-		b.WriteString(`<button type="submit" class="btn btn-glow" style="width:100%;margin-top:12px">Entrar</button>`)
-		b.WriteString(`<p style="text-align:center;margin:16px 0 0;font-size:13px;opacity:.7">`)
-		b.WriteString(`<span id="auth-toggle-text">Nao tem conta?</span> <a href="#" onclick="toggleAuthMode()" id="auth-toggle-link" style="color:var(--primary)">Criar conta</a></p>`)
-		b.WriteString(`<button type="button" onclick="fecharAuth()" class="btn" style="width:100%;margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,.1)">Cancelar</button>`)
+		b.WriteString(fmt.Sprintf(`<div class="mb-4"><label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">%s</label><input type="text" id="auth-login" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="%s"></div>`, cap(loginField), loginField))
+		b.WriteString(fmt.Sprintf(`<div class="mb-4"><label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">%s</label><input type="password" id="auth-pass" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary" placeholder="%s" minlength="6"></div>`, cap(passField), passField))
+		b.WriteString(`<div id="auth-error" class="text-red-500 text-sm my-2 hidden"></div>`)
+		b.WriteString(`<button type="submit" class="w-full bg-primary hover:bg-primary/80 text-white py-2.5 rounded-xl font-medium transition-all mt-3">Entrar</button>`)
+		b.WriteString(`<p class="text-center mt-4 text-sm text-gray-500">`)
+		b.WriteString(`<span id="auth-toggle-text">Nao tem conta?</span> <a href="#" onclick="toggleAuthMode()" id="auth-toggle-link" class="text-primary hover:underline">Criar conta</a></p>`)
+		b.WriteString(`<button type="button" onclick="fecharAuth()" class="w-full mt-2 px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-sm">Cancelar</button>`)
 		b.WriteString(`</form></div></div>`)
 	}
 
@@ -153,21 +170,22 @@ func applyThemeDefaults(t *ast.Theme) {
 
 func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 	var b strings.Builder
-	b.WriteString(`<aside class="sidebar" id="sidebar">`)
-	b.WriteString(`<div class="sb-top">`)
+	b.WriteString(`<aside class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col fixed h-full z-50 transition-all duration-300" id="sidebar">`)
+
 	// Brand
-	b.WriteString(`<div class="sb-brand">`)
+	b.WriteString(`<div class="p-5 border-b border-gray-200 dark:border-gray-800">`)
+	b.WriteString(`<div class="flex items-center gap-3">`)
 	if theme.Icon != "" {
-		b.WriteString(`<div class="sb-logo"><img src="` + theme.Icon + `" alt="logo" style="width:24px;height:24px;object-fit:contain"></div>`)
+		b.WriteString(`<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0"><img src="` + theme.Icon + `" alt="logo" class="w-6 h-6 object-contain rounded"></div>`)
 	} else {
-		b.WriteString(`<div class="sb-logo">` + svgIcon("zap") + `</div>`)
+		b.WriteString(`<div class="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary">` + svgIcon("zap") + `</div>`)
 	}
-	b.WriteString(`<span class="sb-name">` + html.EscapeString(cap(s.Program.System.Name)) + `</span>`)
-	b.WriteString(`<button class="sb-collapse" onclick="toggleCollapse()" title="Recolher">` + svgIcon("chevleft") + `</button></div>`)
+	b.WriteString(`<span class="font-bold text-lg tracking-tight truncate">` + html.EscapeString(cap(s.Program.System.Name)) + `</span>`)
+	b.WriteString(`</div></div>`)
+
 	// Nav
-	b.WriteString(`<nav class="sb-nav">`)
+	b.WriteString(`<nav class="flex-1 p-2 space-y-1 overflow-y-auto">`)
 	if len(s.Program.SidebarItems) > 0 {
-		// Custom sidebar items defined by user
 		for _, item := range s.Program.SidebarItems {
 			label := item.Label
 			if label == "" {
@@ -181,16 +199,15 @@ func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 			if link == "" {
 				link = lo(label)
 			}
-			b.WriteString(fmt.Sprintf(`<a class="sb-link" onclick="irPara('%s',this)" href="#">`, html.EscapeString(link)))
-			b.WriteString(`<div class="sb-icon">` + svgIcon(icon) + `</div><span>` + html.EscapeString(cap(label)) + `</span></a>`)
+			b.WriteString(fmt.Sprintf(`<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm font-medium" onclick="irPara('%s',this)" href="#">`, html.EscapeString(link)))
+			b.WriteString(`<span class="w-5 h-5 flex-shrink-0">` + svgIcon(icon) + `</span><span>` + html.EscapeString(cap(label)) + `</span></a>`)
 		}
 	} else {
-		// Smart sidebar: if user defined screens, use those; otherwise auto-generate from models
-		b.WriteString(`<a class="sb-link active" onclick="irPara('dashboard',this)" href="#">`)
-		b.WriteString(`<div class="sb-icon">` + svgIcon("layout") + `</div><span>Dashboard</span></a>`)
+		// Dashboard link
+		b.WriteString(`<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary transition-all cursor-pointer text-sm font-medium" onclick="irPara('dashboard',this)" href="#">`)
+		b.WriteString(`<span class="w-5 h-5 flex-shrink-0">` + svgIcon("layout") + `</span><span>Dashboard</span></a>`)
 
 		if len(s.Program.Screens) > 0 {
-			// User defined screens — show those as primary navigation
 			for _, scr := range s.Program.Screens {
 				name := lo(scr.Name)
 				title := scr.Title
@@ -198,14 +215,13 @@ func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 					title = cap(scr.Name)
 				}
 				icon := "grid"
-				// Try to infer icon from the model referenced by the screen
 				if pm := s.primaryScreenModel(scr); pm != nil {
 					icon = modelIcon(lo(pm.Name))
 				}
-				b.WriteString(fmt.Sprintf(`<a class="sb-link" onclick="irPara('screen-%s',this)" href="#">`, name))
-				b.WriteString(`<div class="sb-icon">` + svgIcon(icon) + `</div><span>` + html.EscapeString(title) + `</span></a>`)
+				b.WriteString(fmt.Sprintf(`<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm font-medium" onclick="irPara('screen-%s',this)" href="#">`, name))
+				b.WriteString(`<span class="w-5 h-5 flex-shrink-0">` + svgIcon(icon) + `</span><span>` + html.EscapeString(title) + `</span></a>`)
 			}
-			// Add models that don't have a custom screen
+			// Models without custom screen
 			for _, model := range s.Program.Models {
 				mName := lo(model.Name)
 				hasScreen := false
@@ -217,28 +233,28 @@ func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 				}
 				if !hasScreen {
 					icon := modelIcon(mName)
-					b.WriteString(fmt.Sprintf(`<a class="sb-link" onclick="irPara('%s',this)" href="#">`, mName))
-					b.WriteString(`<div class="sb-icon">` + svgIcon(icon) + `</div><span>` + html.EscapeString(cap(model.Name)) + `</span></a>`)
+					b.WriteString(fmt.Sprintf(`<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm font-medium" onclick="irPara('%s',this)" href="#">`, mName))
+					b.WriteString(`<span class="w-5 h-5 flex-shrink-0">` + svgIcon(icon) + `</span><span>` + html.EscapeString(cap(model.Name)) + `</span></a>`)
 				}
 			}
 		} else {
-			// No custom screens — auto-generate from models
 			for _, model := range s.Program.Models {
 				name := lo(model.Name)
 				icon := modelIcon(name)
 				if model.Icon != "" {
 					icon = model.Icon
 				}
-				b.WriteString(fmt.Sprintf(`<a class="sb-link" onclick="irPara('%s',this)" href="#">`, name))
-				b.WriteString(`<div class="sb-icon">` + svgIcon(icon) + `</div><span>` + html.EscapeString(cap(model.Name)) + `</span></a>`)
+				b.WriteString(fmt.Sprintf(`<a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm font-medium" onclick="irPara('%s',this)" href="#">`, name))
+				b.WriteString(`<span class="w-5 h-5 flex-shrink-0">` + svgIcon(icon) + `</span><span>` + html.EscapeString(cap(model.Name)) + `</span></a>`)
 			}
 		}
 	}
-	b.WriteString(`</nav></div>`)
+	b.WriteString(`</nav>`)
+
 	// Footer
-	b.WriteString(`<div class="sb-foot">`)
-	b.WriteString(`<button class="sb-theme" onclick="toggleDark()">` + svgIcon("moon") + `<span>Tema</span></button>`)
-	b.WriteString(`<div class="sb-powered">Flang v0.3</div>`)
+	b.WriteString(`<div class="p-3 border-t border-gray-200 dark:border-gray-800">`)
+	b.WriteString(`<button class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer text-sm w-full" onclick="toggleDark()"><span class="w-5 h-5 flex-shrink-0">` + svgIcon("moon") + `</span><span>Tema</span></button>`)
+	b.WriteString(`<div class="text-xs text-gray-400 dark:text-gray-600 text-center mt-2">Flang v0.3</div>`)
 	b.WriteString(`</div></aside>`)
 	return b.String()
 }
@@ -249,25 +265,38 @@ func (s *Servidor) renderSidebar(theme *ast.Theme) string {
 
 func (s *Servidor) renderTopbar() string {
 	var b strings.Builder
-	b.WriteString(`<header class="topbar">`)
-	b.WriteString(`<button class="tb-menu" onclick="toggleSidebar()">` + svgIcon("menu") + `</button>`)
-	b.WriteString(`<div class="tb-title-wrap"><h1 id="page-title">Dashboard</h1><p class="tb-sub">Operacao em tempo real com Flang</p></div>`)
-	b.WriteString(`<div class="tb-status">`)
-	b.WriteString(`<div class="tb-chip"><span class="tb-dot tb-dot-online"></span><span id="tb-sockets">0 conexoes</span></div>`)
-	b.WriteString(`<div class="tb-chip"><span class="tb-dot tb-dot-jobs"></span><span id="tb-jobs">jobs 0/0</span></div>`)
-	b.WriteString(`<div class="tb-chip"><span class="tb-dot tb-dot-wa"></span><span id="tb-wa">whatsapp offline</span></div>`)
+	b.WriteString(`<div class="flex items-center justify-between mb-6 px-2 pt-2">`)
+
+	// Mobile hamburger
+	b.WriteString(`<button class="md:hidden text-gray-600 dark:text-gray-400 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onclick="toggleSidebar()">` + svgIcon("menu") + `</button>`)
+
+	// Title
+	b.WriteString(`<div>`)
+	b.WriteString(`<h1 class="text-2xl font-bold tracking-tight" id="page-title">Dashboard</h1>`)
+	b.WriteString(`<p class="text-gray-400 dark:text-gray-500 text-sm">Gerenciamento</p>`)
 	b.WriteString(`</div>`)
-	b.WriteString(`<div class="tb-end">`)
-	b.WriteString(`<div class="tb-search"><input type="text" placeholder="Buscar..." id="global-search" oninput="buscaGlobal(this.value)">` + svgIcon("search") + `</div>`)
+
+	// Status chips
+	b.WriteString(`<div class="hidden md:flex items-center gap-2 flex-1 justify-center">`)
+	b.WriteString(`<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.15)]"></span><span id="tb-sockets">0 conexoes</span></div>`)
+	b.WriteString(`<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.12)]"></span><span id="tb-jobs">jobs 0/0</span></div>`)
+	b.WriteString(`<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium text-gray-500 dark:text-gray-400"><span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_0_3px_rgba(6,182,212,0.12)]"></span><span id="tb-wa">whatsapp offline</span></div>`)
+	b.WriteString(`</div>`)
+
+	// Right: search + auth
+	b.WriteString(`<div class="flex items-center gap-3">`)
+	b.WriteString(`<div class="relative"><input type="text" placeholder="Buscar..." id="global-search" oninput="buscaGlobal(this.value)" class="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-48 focus:w-64 transition-all"><span class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none">` + svgIcon("search") + `</span></div>`)
 	// Auth button
 	if s.Auth != nil {
-		b.WriteString(`<div id="auth-area">`)
-		b.WriteString(`<button class="btn btn-sm" id="btn-login" onclick="mostrarLogin()" style="margin-left:8px">` + svgIcon("user") + ` <span>Entrar</span></button>`)
-		b.WriteString(`<span id="user-info" style="display:none;margin-left:8px;font-size:13px;opacity:.8"></span>`)
-		b.WriteString(`<button class="btn btn-sm" id="btn-logout" onclick="sair()" style="display:none;margin-left:4px">Sair</button>`)
+		b.WriteString(`<div id="auth-area" class="flex items-center gap-2">`)
+		b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2" id="btn-login" onclick="mostrarLogin()"><span class="w-4 h-4">` + svgIcon("user") + `</span><span>Entrar</span></button>`)
+		b.WriteString(`<span id="user-info" class="hidden text-sm text-gray-500 dark:text-gray-400"></span>`)
+		b.WriteString(`<button class="hidden text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" id="btn-logout" onclick="sair()">Sair</button>`)
 		b.WriteString(`</div>`)
 	}
-	b.WriteString(`</div></header>`)
+	b.WriteString(`</div>`)
+
+	b.WriteString(`</div>`)
 	return b.String()
 }
 
@@ -277,26 +306,34 @@ func (s *Servidor) renderTopbar() string {
 
 func (s *Servidor) renderDashboard(theme *ast.Theme) string {
 	var b strings.Builder
-	b.WriteString(`<div id="secao-dashboard" class="section anim-in">`)
+	b.WriteString(`<div id="secao-dashboard" class="section">`)
 
 	// Bento stat cards
-	b.WriteString(`<div class="bento">`)
-	colors := []string{theme.Primary, theme.Secondary, theme.Accent, "#10b981", "#3b82f6", "#ef4444", "#06b6d4", "#ec4899"}
-	for i, model := range s.Program.Models {
+	numCols := len(s.Program.Models)
+	gridCols := "grid-cols-2 md:grid-cols-4"
+	if numCols <= 2 {
+		gridCols = "grid-cols-1 md:grid-cols-2"
+	} else if numCols == 3 {
+		gridCols = "grid-cols-1 md:grid-cols-3"
+	}
+	b.WriteString(`<div class="grid ` + gridCols + ` gap-4 mb-6">`)
+	for _, model := range s.Program.Models {
 		name := lo(model.Name)
 		icon := modelIcon(name)
-		color := colors[i%len(colors)]
-		b.WriteString(fmt.Sprintf(`<div class="bento-card" onclick="irParaNav('%s')" style="--accent:%s">`, name, color))
-		b.WriteString(`<div class="bc-icon">` + svgIcon(icon) + `</div>`)
-		b.WriteString(fmt.Sprintf(`<div class="bc-num" id="stat-%s">0</div>`, name))
-		b.WriteString(`<div class="bc-label">` + html.EscapeString(cap(model.Name)) + `</div>`)
-		b.WriteString(`<div class="bc-glow"></div></div>`)
+		b.WriteString(fmt.Sprintf(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:border-primary/50 transition-all cursor-pointer group" onclick="irParaNav('%s')">`, name))
+		b.WriteString(`<div class="flex items-center justify-between mb-3">`)
+		b.WriteString(`<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><span class="w-5 h-5">` + svgIcon(icon) + `</span></div>`)
+		b.WriteString(fmt.Sprintf(`<span class="text-2xl font-bold" id="stat-%s">0</span>`, name))
+		b.WriteString(`</div>`)
+		b.WriteString(`<p class="text-gray-500 dark:text-gray-400 text-sm font-medium">` + html.EscapeString(cap(model.Name)) + `</p>`)
+		b.WriteString(`</div>`)
 	}
 	b.WriteString(`</div>`)
 
 	// Chart.js canvas for records per model
-	b.WriteString(`<div class="card chart-card"><div class="card-head">` + svgIcon("activity") + `<h3>Registros por Modelo</h3></div>`)
-	b.WriteString(`<div class="chart-wrap"><canvas id="chart-models" height="260"></canvas></div></div>`)
+	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mb-6">`)
+	b.WriteString(`<div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-800"><span class="w-4 h-4 text-primary">` + svgIcon("activity") + `</span><h3 class="text-sm font-semibold">Registros por Modelo</h3></div>`)
+	b.WriteString(`<div class="p-5"><canvas id="chart-models" height="260"></canvas></div></div>`)
 
 	// Render any user-defined grafico components from screens
 	for _, scr := range s.Program.Screens {
@@ -318,22 +355,32 @@ func (s *Servidor) renderDashboard(theme *ast.Theme) string {
 		}
 	}
 	if hasStatus {
-		b.WriteString(`<div class="card chart-card"><div class="card-head">` + svgIcon("tag") + `<h3>Status por Modelo</h3></div>`)
-		b.WriteString(`<div class="chart-wrap"><canvas id="chart-status" height="260"></canvas></div></div>`)
+		b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mb-6">`)
+		b.WriteString(`<div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-800"><span class="w-4 h-4 text-primary">` + svgIcon("tag") + `</span><h3 class="text-sm font-semibold">Status por Modelo</h3></div>`)
+		b.WriteString(`<div class="p-5"><canvas id="chart-status" height="260"></canvas></div></div>`)
 	}
 
 	// Activity feed + info
-	b.WriteString(`<div class="dash-grid">`)
-	b.WriteString(`<div class="card"><div class="card-head">` + svgIcon("activity") + `<h3>Atividade Recente</h3></div>`)
-	b.WriteString(`<div id="atividade" class="ativ-list"><div class="empty-state">` + svgIcon("inbox") + `<p>Nenhuma atividade</p></div></div></div>`)
-	b.WriteString(`<div class="card"><div class="card-head">` + svgIcon("info") + `<h3>Informa&ccedil;&otilde;es</h3></div>`)
-	b.WriteString(`<div class="info-list">`)
-	b.WriteString(fmt.Sprintf(`<div class="info-row"><span class="info-k">Sistema</span><span class="info-v">%s</span></div>`, html.EscapeString(cap(s.Program.System.Name))))
-	b.WriteString(fmt.Sprintf(`<div class="info-row"><span class="info-k">Modelos</span><span class="info-v">%d</span></div>`, len(s.Program.Models)))
-	b.WriteString(fmt.Sprintf(`<div class="info-row"><span class="info-k">Telas</span><span class="info-v">%d</span></div>`, len(s.Program.Screens)))
-	b.WriteString(`<div class="info-row"><span class="info-k">Engine</span><span class="info-v">Flang v0.3</span></div>`)
+	b.WriteString(`<div class="grid grid-cols-1 md:grid-cols-3 gap-4">`)
+
+	// Activity
+	b.WriteString(`<div class="md:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">`)
+	b.WriteString(`<div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-800"><span class="w-4 h-4 text-primary">` + svgIcon("activity") + `</span><h3 class="text-sm font-semibold">Atividade Recente</h3></div>`)
+	b.WriteString(`<div id="atividade" class="max-h-80 overflow-y-auto">`)
+	b.WriteString(`<div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-600"><span class="w-10 h-10 mb-2 opacity-40">` + svgIcon("inbox") + `</span><p class="text-sm">Nenhuma atividade</p></div>`)
 	b.WriteString(`</div></div>`)
-	b.WriteString(`</div>`) // dash-grid
+
+	// Info
+	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">`)
+	b.WriteString(`<div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-800"><span class="w-4 h-4 text-primary">` + svgIcon("info") + `</span><h3 class="text-sm font-semibold">Informacoes</h3></div>`)
+	b.WriteString(`<div class="divide-y divide-gray-100 dark:divide-gray-800">`)
+	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Sistema</span><span class="font-medium">%s</span></div>`, html.EscapeString(cap(s.Program.System.Name))))
+	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Modelos</span><span class="font-medium">%d</span></div>`, len(s.Program.Models)))
+	b.WriteString(fmt.Sprintf(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Telas</span><span class="font-medium">%d</span></div>`, len(s.Program.Screens)))
+	b.WriteString(`<div class="flex justify-between px-5 py-3 text-sm"><span class="text-gray-500 dark:text-gray-400">Engine</span><span class="font-medium">Flang v0.3</span></div>`)
+	b.WriteString(`</div></div>`)
+
+	b.WriteString(`</div>`) // grid
 	b.WriteString(`</div>`) // dashboard section
 	return b.String()
 }
@@ -353,8 +400,9 @@ func (s *Servidor) renderChartComponent(b *strings.Builder, comp *ast.Component)
 		title = cap(target) + " - Grafico"
 	}
 	chartID := "chart-custom-" + lo(target) + "-" + lo(chartType)
-	b.WriteString(`<div class="card chart-card"><div class="card-head">` + svgIcon("activity") + `<h3>` + title + `</h3></div>`)
-	b.WriteString(fmt.Sprintf(`<div class="chart-wrap"><canvas id="%s" height="260" data-chart-type="%s" data-chart-model="%s"></canvas></div></div>`, chartID, chartType, lo(target)))
+	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mb-6">`)
+	b.WriteString(`<div class="flex items-center gap-2.5 px-5 py-4 border-b border-gray-200 dark:border-gray-800"><span class="w-4 h-4 text-primary">` + svgIcon("activity") + `</span><h3 class="text-sm font-semibold">` + title + `</h3></div>`)
+	b.WriteString(fmt.Sprintf(`<div class="p-5"><canvas id="%s" height="260" data-chart-type="%s" data-chart-model="%s"></canvas></div></div>`, chartID, chartType, lo(target)))
 }
 
 // ============================================================
@@ -369,8 +417,8 @@ func (s *Servidor) renderCustomScreens(b *strings.Builder) {
 		if title == "" {
 			title = cap(scr.Name)
 		}
-		b.WriteString(fmt.Sprintf(`<div id="secao-screen-%s" class="section" style="display:none">`, name))
-		b.WriteString(`<div class="sec-head"><div class="sec-left"><h2>` + html.EscapeString(title) + `</h2></div></div>`)
+		b.WriteString(fmt.Sprintf(`<div id="secao-screen-%s" class="section hidden">`, name))
+		b.WriteString(`<div class="mb-6"><h2 class="text-xl font-bold">` + html.EscapeString(title) + `</h2></div>`)
 		for _, comp := range scr.Components {
 			s.renderScreenComponent(b, comp, primaryModel)
 		}
@@ -420,17 +468,19 @@ func (s *Servidor) renderInlineListComponent(b *strings.Builder, model *ast.Mode
 	}
 
 	name := lo(model.Name)
-	b.WriteString(fmt.Sprintf(`<div class="card table-wrap" data-list-model="%s">`, name))
-	b.WriteString(`<table><thead><tr><th class="th-id">#</th>`)
+	b.WriteString(fmt.Sprintf(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden mb-4" data-list-model="%s">`, name))
+	b.WriteString(`<table class="w-full"><thead><tr class="border-b border-gray-200 dark:border-gray-800">`)
+	b.WriteString(`<th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>`)
 	for _, f := range model.Fields {
 		if f.Type == ast.FieldSenha {
 			continue
 		}
-		b.WriteString(`<th>` + html.EscapeString(cap(f.Name)) + `</th>`)
+		b.WriteString(`<th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">` + html.EscapeString(cap(f.Name)) + `</th>`)
 	}
-	b.WriteString(`<th class="th-act"></th></tr></thead><tbody></tbody></table>`)
-	b.WriteString(`<div class="empty-state">`)
-	b.WriteString(svgIcon("inbox") + `<p>Nenhum registro</p></div></div>`)
+	b.WriteString(`<th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24"></th>`)
+	b.WriteString(`</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800"></tbody></table>`)
+	b.WriteString(`<div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-600">`)
+	b.WriteString(`<span class="w-10 h-10 mb-2 opacity-40">` + svgIcon("inbox") + `</span><p class="text-sm">Nenhum registro</p></div></div>`)
 }
 
 func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component, primaryModel *ast.Model) {
@@ -444,7 +494,7 @@ func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component
 		if text == "" {
 			text = comp.Properties["valor"]
 		}
-		b.WriteString(`<div class="card" style="padding:20px"><p>` + text + `</p></div>`)
+		b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-4"><p class="text-sm">` + text + `</p></div>`)
 	case ast.CompButton:
 		label := comp.Properties["texto"]
 		if label == "" {
@@ -461,15 +511,14 @@ func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component
 				action = fmt.Sprintf("abrirForm('%s')", lo(model.Name))
 			}
 		}
-		b.WriteString(fmt.Sprintf(`<button class="btn btn-glow" onclick="%s">%s</button>`, action, html.EscapeString(label)))
+		b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 mb-4" onclick="%s">%s</button>`, action, html.EscapeString(label)))
 	case ast.CompChat:
 		s.renderChatComponent(b, comp)
 	case ast.CompForm:
 		target := lo(comp.Target)
-		b.WriteString(fmt.Sprintf(`<div class="card" style="padding:20px"><h3>Formulario - %s</h3>`, cap(target)))
-		b.WriteString(fmt.Sprintf(`<form onsubmit="salvar('%s',event)" class="modal-form">`, target))
+		b.WriteString(fmt.Sprintf(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 mb-4"><h3 class="text-base font-semibold mb-4">Formulario - %s</h3>`, cap(target)))
+		b.WriteString(fmt.Sprintf(`<form onsubmit="salvar('%s',event)" class="space-y-4">`, target))
 		b.WriteString(fmt.Sprintf(`<input type="hidden" id="%s-id">`, target))
-		// Find the model
 		for _, m := range s.Program.Models {
 			if lo(m.Name) == target {
 				for _, f := range m.Fields {
@@ -478,10 +527,9 @@ func (s *Servidor) renderScreenComponent(b *strings.Builder, comp *ast.Component
 				break
 			}
 		}
-		b.WriteString(`<button type="submit" class="btn btn-glow">` + svgIcon("check") + `<span>Salvar</span></button>`)
+		b.WriteString(`<button type="submit" class="bg-primary hover:bg-primary/80 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2"><span class="w-4 h-4">` + svgIcon("check") + `</span><span>Salvar</span></button>`)
 		b.WriteString(`</form></div>`)
 	default:
-		// Render children if any
 		for _, child := range comp.Children {
 			s.renderScreenComponent(b, child, primaryModel)
 		}
@@ -502,18 +550,36 @@ func (s *Servidor) renderChatComponent(b *strings.Builder, comp *ast.Component) 
 	if title == "" {
 		title = "Chat"
 	}
-	b.WriteString(fmt.Sprintf(`<div class="chat-shell card" data-chat-target="%s" data-chat-messages="%s" data-chat-relation="%s" data-chat-text="%s" data-chat-media="%s" data-chat-author="%s" data-chat-time="%s" data-chat-type="%s">`,
+	b.WriteString(fmt.Sprintf(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden grid grid-cols-[340px_1fr] min-h-[720px]" data-chat-target="%s" data-chat-messages="%s" data-chat-relation="%s" data-chat-text="%s" data-chat-media="%s" data-chat-author="%s" data-chat-time="%s" data-chat-type="%s">`,
 		target, messagesModel, relationField, lo(comp.Properties["text_field"]), lo(comp.Properties["media_field"]), lo(comp.Properties["author_field"]), lo(comp.Properties["timestamp_field"]), lo(comp.Properties["type_field"])))
-	b.WriteString(`<div class="chat-side"><div class="chat-side-top"><h3>` + html.EscapeString(title) + `</h3><input class="chat-filter" placeholder="Buscar conversa" oninput="chatFilter('` + target + `',this.value)"></div>`)
-	b.WriteString(`<div id="chat-conv-` + target + `" class="chat-conv-list"></div></div>`)
-	b.WriteString(`<div class="chat-main"><div class="chat-main-top"><div><strong id="chat-title-` + target + `">Selecione uma conversa</strong><div id="chat-presence-` + target + `" class="chat-presence"></div></div><button class="btn btn-ghost btn-sm" type="button" onclick="refreshChat('` + target + `')">Atualizar</button></div>`)
-	b.WriteString(`<div id="chat-msg-` + target + `" class="chat-messages"><div class="empty-state"><p>Nenhuma conversa selecionada</p></div></div>`)
-	b.WriteString(`<div id="chat-typing-` + target + `" class="chat-typing"></div>`)
-	b.WriteString(`<form class="chat-compose" onsubmit="chatSend('` + target + `',event)">`)
-	b.WriteString(`<input type="file" id="chat-file-` + target + `" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt" onchange="chatUpload('` + target + `',this)">`)
-	b.WriteString(`<input type="text" id="chat-input-` + target + `" placeholder="Digite uma mensagem" oninput="chatTyping('` + target + `',true)" onblur="chatTyping('` + target + `',false)">`)
-	b.WriteString(`<button class="btn btn-glow" type="submit">Enviar</button>`)
-	b.WriteString(`</form></div></div>`)
+
+	// Chat sidebar
+	b.WriteString(`<div class="border-r border-gray-200 dark:border-gray-800 flex flex-col">`)
+	b.WriteString(`<div class="p-4 border-b border-gray-200 dark:border-gray-800 flex flex-col gap-2">`)
+	b.WriteString(`<h3 class="font-semibold text-sm">` + html.EscapeString(title) + `</h3>`)
+	b.WriteString(`<input class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Buscar conversa" oninput="chatFilter('` + target + `',this.value)">`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<div id="chat-conv-` + target + `" class="flex-1 overflow-auto flex flex-col"></div>`)
+	b.WriteString(`</div>`)
+
+	// Chat main
+	b.WriteString(`<div class="flex flex-col min-w-0">`)
+	b.WriteString(`<div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center gap-3">`)
+	b.WriteString(`<div><strong class="text-sm" id="chat-title-` + target + `">Selecione uma conversa</strong>`)
+	b.WriteString(`<div id="chat-presence-` + target + `" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></div></div>`)
+	b.WriteString(`<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-1.5 rounded-lg text-xs transition-all" type="button" onclick="refreshChat('` + target + `')">Atualizar</button>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<div id="chat-msg-` + target + `" class="flex-1 p-6 overflow-auto flex flex-col gap-3 bg-gray-50 dark:bg-gray-950/50">`)
+	b.WriteString(`<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">Nenhuma conversa selecionada</p></div>`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<div id="chat-typing-` + target + `" class="min-h-[20px] px-4 py-1 text-xs text-gray-500"></div>`)
+	b.WriteString(`<form class="flex gap-2 p-4 border-t border-gray-200 dark:border-gray-800 items-center" onsubmit="chatSend('` + target + `',event)">`)
+	b.WriteString(`<input type="file" id="chat-file-` + target + `" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.txt" onchange="chatUpload('` + target + `',this)" class="max-w-[160px] text-xs">`)
+	b.WriteString(`<input type="text" id="chat-input-` + target + `" placeholder="Digite uma mensagem" oninput="chatTyping('` + target + `',true)" onblur="chatTyping('` + target + `',false)" class="flex-1 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">`)
+	b.WriteString(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all" type="submit">Enviar</button>`)
+	b.WriteString(`</form></div>`)
+
+	b.WriteString(`</div>`) // chat shell
 }
 
 // ============================================================
@@ -524,33 +590,38 @@ func (s *Servidor) renderModelSection(b *strings.Builder, model *ast.Model, them
 	name := lo(model.Name)
 	capName := cap(model.Name)
 
-	b.WriteString(fmt.Sprintf(`<div id="secao-%s" class="section" style="display:none">`, name))
+	b.WriteString(fmt.Sprintf(`<div id="secao-%s" class="section hidden">`, name))
 
 	// Section header
-	b.WriteString(`<div class="sec-head">`)
-	b.WriteString(`<div class="sec-left">`)
-	b.WriteString(fmt.Sprintf(`<div class="sec-search"><input type="text" placeholder="Buscar em %s..." oninput="filtrar('%s',this.value)">`, html.EscapeString(capName), name))
-	b.WriteString(svgIcon("search") + `</div></div>`)
-	b.WriteString(`<div class="sec-actions">`)
-	b.WriteString(fmt.Sprintf(`<button class="btn btn-ghost btn-sm" onclick="exportar('%s','csv')" title="CSV">%s<span>CSV</span></button>`, name, svgIcon("file")))
-	b.WriteString(fmt.Sprintf(`<button class="btn btn-ghost btn-sm" onclick="exportar('%s','json')" title="JSON">%s<span>JSON</span></button>`, name, svgIcon("file")))
-	b.WriteString(fmt.Sprintf(`<button class="btn btn-glow" onclick="abrirForm('%s')">%s<span>Novo %s</span></button>`, name, svgIcon("plus"), html.EscapeString(capName)))
+	b.WriteString(`<div class="flex items-center justify-between gap-4 mb-5 flex-wrap">`)
+	// Search
+	b.WriteString(`<div class="flex-1 max-w-sm">`)
+	b.WriteString(fmt.Sprintf(`<div class="relative"><input type="text" placeholder="Buscar em %s..." oninput="filtrar('%s',this.value)" class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">`, html.EscapeString(capName), name))
+	b.WriteString(`<span class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none">` + svgIcon("search") + `</span></div></div>`)
+	// Actions
+	b.WriteString(`<div class="flex items-center gap-2">`)
+	b.WriteString(fmt.Sprintf(`<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" onclick="exportar('%s','csv')"><span class="w-4 h-4 inline-block align-middle mr-1">%s</span>CSV</button>`, name, svgIcon("file")))
+	b.WriteString(fmt.Sprintf(`<button class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-2 rounded-lg text-sm transition-all" onclick="exportar('%s','json')"><span class="w-4 h-4 inline-block align-middle mr-1">%s</span>JSON</button>`, name, svgIcon("file")))
+	b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2" onclick="abrirForm('%s')"><span class="w-4 h-4">%s</span><span>Novo %s</span></button>`, name, svgIcon("plus"), html.EscapeString(capName)))
 	b.WriteString(`</div></div>`)
 
 	// Table
-	b.WriteString(`<div class="card table-wrap">`)
-	b.WriteString(`<table><thead><tr><th class="th-id">#</th>`)
+	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">`)
+	b.WriteString(`<div class="overflow-x-auto">`)
+	b.WriteString(`<table class="w-full"><thead><tr class="border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">`)
+	b.WriteString(`<th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>`)
 	for _, f := range model.Fields {
 		if f.Type == ast.FieldSenha {
 			continue
 		}
-		b.WriteString(`<th>` + html.EscapeString(cap(f.Name)) + `</th>`)
+		b.WriteString(`<th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">` + html.EscapeString(cap(f.Name)) + `</th>`)
 	}
-	b.WriteString(`<th class="th-act"></th></tr></thead>`)
-	b.WriteString(fmt.Sprintf(`<tbody id="tabela-%s"></tbody></table>`, name))
-	b.WriteString(fmt.Sprintf(`<div id="paginacao-%s" class="pagination"></div>`, name))
-	b.WriteString(fmt.Sprintf(`<div id="vazio-%s" class="empty-state">`, name))
-	b.WriteString(svgIcon("inbox") + `<p>Nenhum registro</p></div></div>`)
+	b.WriteString(`<th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider w-24"></th>`)
+	b.WriteString(`</tr></thead>`)
+	b.WriteString(fmt.Sprintf(`<tbody id="tabela-%s" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody></table></div>`, name))
+	b.WriteString(fmt.Sprintf(`<div id="paginacao-%s" class="flex items-center justify-center gap-1 p-3 border-t border-gray-200 dark:border-gray-800"></div>`, name))
+	b.WriteString(fmt.Sprintf(`<div id="vazio-%s" class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-600">`, name))
+	b.WriteString(`<span class="w-10 h-10 mb-2 opacity-40">` + svgIcon("inbox") + `</span><p class="text-sm">Nenhum registro</p></div></div>`)
 
 	b.WriteString(`</div>`) // section
 }
@@ -560,19 +631,21 @@ func (s *Servidor) renderModelModal(b *strings.Builder, model *ast.Model) {
 	name := lo(model.Name)
 	capName := cap(model.Name)
 
-	b.WriteString(fmt.Sprintf(`<div id="modal-%s" class="modal-wrap" onclick="if(event.target===this)fecharForm('%s')">`, name, name))
-	b.WriteString(`<div class="modal anim-modal">`)
-	b.WriteString(fmt.Sprintf(`<div class="modal-top"><h2 id="titulo-form-%s">Novo %s</h2>`, name, capName))
-	b.WriteString(fmt.Sprintf(`<button onclick="fecharForm('%s')" class="modal-x">`, name) + svgIcon("x") + `</button></div>`)
-	b.WriteString(fmt.Sprintf(`<form onsubmit="salvar('%s',event)" class="modal-form"><input type="hidden" id="%s-id">`, name, name))
+	b.WriteString(fmt.Sprintf(`<div id="modal-%s" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4" onclick="if(event.target===this)fecharForm('%s')">`, name, name))
+	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">`)
+	// Header
+	b.WriteString(fmt.Sprintf(`<div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-800"><h2 class="text-lg font-semibold" id="titulo-form-%s">Novo %s</h2>`, name, capName))
+	b.WriteString(fmt.Sprintf(`<button onclick="fecharForm('%s')" class="text-gray-400 hover:text-gray-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"><span class="w-5 h-5">`, name) + svgIcon("x") + `</span></button></div>`)
+	// Form
+	b.WriteString(fmt.Sprintf(`<form onsubmit="salvar('%s',event)" class="p-5 space-y-4"><input type="hidden" id="%s-id">`, name, name))
 
 	for _, f := range model.Fields {
 		s.renderFormField(b, model, f)
 	}
 
-	b.WriteString(`<div class="modal-foot">`)
-	b.WriteString(`<button type="submit" class="btn btn-glow">` + svgIcon("check") + `<span>Salvar</span></button>`)
-	b.WriteString(fmt.Sprintf(`<button type="button" class="btn btn-ghost" onclick="fecharForm('%s')">Cancelar</button>`, name))
+	b.WriteString(`<div class="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">`)
+	b.WriteString(`<button type="submit" class="flex-1 bg-primary hover:bg-primary/80 text-white py-2.5 rounded-xl font-medium transition-all flex items-center justify-center gap-2"><span class="w-4 h-4">` + svgIcon("check") + `</span>Salvar</button>`)
+	b.WriteString(fmt.Sprintf(`<button type="button" onclick="fecharForm('%s')" class="px-6 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all text-sm">Cancelar</button>`, name))
 	b.WriteString(`</div></form></div></div>`)
 }
 
@@ -585,20 +658,22 @@ func (s *Servidor) renderFormField(b *strings.Builder, model *ast.Model, f *ast.
 		req = " required"
 	}
 
-	b.WriteString(`<div class="field">`)
-	b.WriteString(fmt.Sprintf(`<label for="%s-%s">%s</label>`, name, fname, html.EscapeString(cap(f.Name))))
+	inputClass := `w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary placeholder-gray-400 dark:placeholder-gray-600 transition-all`
+
+	b.WriteString(`<div>`)
+	b.WriteString(fmt.Sprintf(`<label for="%s-%s" class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">%s</label>`, name, fname, html.EscapeString(cap(f.Name))))
 
 	switch {
 	// FK dropdown
 	case f.Reference != "":
 		refModel := lo(f.Reference)
-		b.WriteString(fmt.Sprintf(`<select id="%s-%s" data-ref="%s"%s>`,
-			name, fname, refModel, req))
+		b.WriteString(fmt.Sprintf(`<select id="%s-%s" data-ref="%s" class="%s"%s>`,
+			name, fname, refModel, inputClass, req))
 		b.WriteString(`<option value="">Selecione...</option></select>`)
 
 	// Enum dropdown
 	case f.Type == ast.FieldEnum && len(f.EnumValues) > 0:
-		b.WriteString(fmt.Sprintf(`<select id="%s-%s"%s>`, name, fname, req))
+		b.WriteString(fmt.Sprintf(`<select id="%s-%s" class="%s"%s>`, name, fname, inputClass, req))
 		b.WriteString(`<option value="">Selecione...</option>`)
 		for _, v := range f.EnumValues {
 			b.WriteString(fmt.Sprintf(`<option value="%s">%s</option>`, html.EscapeString(v), html.EscapeString(cap(v))))
@@ -607,7 +682,7 @@ func (s *Servidor) renderFormField(b *strings.Builder, model *ast.Model, f *ast.
 
 	// Status dropdown
 	case f.Type == ast.FieldStatus:
-		b.WriteString(fmt.Sprintf(`<select id="%s-%s"%s>`, name, fname, req))
+		b.WriteString(fmt.Sprintf(`<select id="%s-%s" class="%s"%s>`, name, fname, inputClass, req))
 		b.WriteString(`<option value="">Selecione...</option>`)
 		for _, v := range []string{"ativo", "inativo", "pendente", "concluido"} {
 			b.WriteString(fmt.Sprintf(`<option value="%s">%s</option>`, v, cap(v)))
@@ -616,19 +691,19 @@ func (s *Servidor) renderFormField(b *strings.Builder, model *ast.Model, f *ast.
 
 	// Long text
 	case f.Type == ast.FieldTextoLongo:
-		b.WriteString(fmt.Sprintf(`<textarea id="%s-%s" placeholder="%s" rows="4"%s></textarea>`,
-			name, fname, html.EscapeString(cap(f.Name)), req))
+		b.WriteString(fmt.Sprintf(`<textarea id="%s-%s" placeholder="%s" rows="4" class="%s resize-none"%s></textarea>`,
+			name, fname, html.EscapeString(cap(f.Name)), inputClass, req))
 
 	// File/image upload
 	case f.Type == ast.FieldImagem || f.Type == ast.FieldUpload || f.Type == ast.FieldArquivo:
 		b.WriteString(fmt.Sprintf(`<input type="hidden" id="%s-%s">`, name, fname))
-		b.WriteString(fmt.Sprintf(`<input type="file" id="%s-%s-file" onchange="uploadFile('%s','%s',this)">`,
-			name, fname, name, fname))
-		b.WriteString(fmt.Sprintf(`<div id="%s-%s-preview" class="upload-preview"></div>`, name, fname))
+		b.WriteString(fmt.Sprintf(`<input type="file" id="%s-%s-file" onchange="uploadFile('%s','%s',this)" class="%s cursor-pointer">`,
+			name, fname, name, fname, inputClass))
+		b.WriteString(fmt.Sprintf(`<div id="%s-%s-preview" class="mt-2"></div>`, name, fname))
 
 	// Boolean checkbox
 	case f.Type == ast.FieldBooleano:
-		b.WriteString(fmt.Sprintf(`<label class="switch"><input type="checkbox" id="%s-%s"%s><span class="slider"></span></label>`,
+		b.WriteString(fmt.Sprintf(`<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="%s-%s" class="sr-only peer"%s><div class="w-11 h-6 bg-gray-300 dark:bg-gray-700 rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div></label>`,
 			name, fname, req))
 
 	// All other input types
@@ -641,410 +716,72 @@ func (s *Servidor) renderFormField(b *strings.Builder, model *ast.Model, f *ast.
 		if f.Type == ast.FieldSenha {
 			inputType = "password"
 		}
-		b.WriteString(fmt.Sprintf(`<input type="%s" id="%s-%s" placeholder="%s"%s%s>`,
-			inputType, name, fname, html.EscapeString(cap(f.Name)), extra, req))
+		b.WriteString(fmt.Sprintf(`<input type="%s" id="%s-%s" placeholder="%s" class="%s"%s%s>`,
+			inputType, name, fname, html.EscapeString(cap(f.Name)), inputClass, extra, req))
 	}
 
 	b.WriteString(`</div>`)
 }
 
 // ============================================================
-// CSS Generation - fully theme-driven via CSS variables
+// CSS Generation - minimal, mostly Tailwind handles it
 // ============================================================
 
 func (s *Servidor) generateCSS(theme *ast.Theme) string {
-	// Compute derived colors for light/dark mode
-	var darkBg, darkCard, darkText, darkText2, darkText3, darkBrd string
-	var lightBg, lightCard, lightText, lightText2, lightText3, lightBrd string
-
-	lightBg = "#f8fafc"
-	lightCard = "rgba(255,255,255,0.85)"
-	lightText = "#0f172a"
-	lightText2 = "#64748b"
-	lightText3 = "#94a3b8"
-	lightBrd = "rgba(0,0,0,0.06)"
-
-	darkBg = "#0c0a1d"
-	darkCard = "rgba(30,27,75,0.6)"
-	darkText = "#e2e8f0"
-	darkText2 = "#94a3b8"
-	darkText3 = "#64748b"
-	darkBrd = "rgba(255,255,255,0.06)"
-
-	// Use user overrides if dark mode is the default
-	if theme.Dark {
-		darkBg = theme.Background
-		darkCard = theme.CardBg
-		darkText = theme.TextColor
-	} else {
-		lightBg = theme.Background
-		lightCard = theme.CardBg
-		lightText = theme.TextColor
-	}
-
-	// Style-specific CSS
-	styleCSS := s.styleVariantCSS(theme.Style)
-
 	css := `
-@import url('https://fonts.googleapis.com/css2?family=` + strings.ReplaceAll(theme.Font, " ", "+") + `:wght@300;400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 
-:root{
-  --primary:` + theme.Primary + `;
-  --secondary:` + theme.Secondary + `;
-  --accent:` + theme.Accent + `;
-  --sidebar-bg:` + theme.Sidebar + `;
-  --radius:` + theme.Radius + `;
-  --font:'` + theme.Font + `',system-ui,-apple-system,sans-serif;
-  --bg:` + lightBg + `;
-  --bg2:#f1f5f9;
-  --card-bg:` + lightCard + `;
-  --card-solid:#fff;
-  --text:` + lightText + `;
-  --text2:` + lightText2 + `;
-  --text3:` + lightText3 + `;
-  --border:` + lightBrd + `;
-  --shadow:0 1px 2px rgba(0,0,0,.04),0 2px 8px rgba(0,0,0,.04);
-  --shadow2:0 4px 24px rgba(0,0,0,.08);
-  --shadow3:0 8px 40px rgba(0,0,0,.12);
-  --ease:cubic-bezier(.4,0,.2,1);
-  --dur:.25s;
-}
+/* Smooth scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(128,128,128,0.2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(128,128,128,0.4)}
 
-body.dark{
-  --bg:` + darkBg + `;
-  --bg2:#12102a;
-  --card-bg:` + darkCard + `;
-  --card-solid:#1e1b4b;
-  --text:` + darkText + `;
-  --text2:` + darkText2 + `;
-  --text3:` + darkText3 + `;
-  --border:` + darkBrd + `;
-  --shadow:0 1px 2px rgba(0,0,0,.2),0 2px 8px rgba(0,0,0,.2);
-  --shadow2:0 4px 24px rgba(0,0,0,.4);
-  --shadow3:0 8px 40px rgba(0,0,0,.5);
-}
-
-body{font-family:var(--font);background:radial-gradient(circle at top left,color-mix(in srgb,var(--primary) 14%,transparent),transparent 28%),
-	radial-gradient(circle at top right,color-mix(in srgb,var(--accent) 12%,transparent),transparent 24%),
-	linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 88%,#031014));color:var(--text);
-	display:flex;min-height:100vh;transition:background .4s var(--ease),color .3s var(--ease);overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;opacity:.35}
-body::after{content:'';position:fixed;inset:auto auto -140px -120px;width:360px;height:360px;border-radius:50%;background:color-mix(in srgb,var(--secondary) 18%,transparent);filter:blur(80px);pointer-events:none;opacity:.45}
-
-/* ===== Sidebar ===== */
-.sidebar{width:260px;background:linear-gradient(180deg,color-mix(in srgb,var(--sidebar-bg) 92%,#041116),color-mix(in srgb,var(--sidebar-bg) 78%,#02090b));color:#fff;display:flex;flex-direction:column;
-	position:fixed;top:14px;left:14px;bottom:14px;z-index:50;transition:width .3s var(--ease),transform .3s var(--ease);border:1px solid rgba(255,255,255,.08);box-shadow:0 20px 50px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);border-radius:28px;overflow:hidden}
-.sidebar.mini{width:72px}
-.sb-top{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.sb-brand{padding:24px 18px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.05),transparent)}
-.sb-logo{width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;
-	background:radial-gradient(circle at 30% 20%,color-mix(in srgb,var(--accent) 60%,#fff),var(--primary));flex-shrink:0;box-shadow:0 10px 24px color-mix(in srgb,var(--primary) 30%,transparent)}
-.sb-logo svg{width:20px;height:20px}
-.sb-logo img{border-radius:6px}
-.sb-name{font-weight:800;font-size:1.1rem;white-space:nowrap;overflow:hidden;transition:opacity .2s;letter-spacing:-.03em}
-.sb-collapse{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;padding:4px;
-  border-radius:6px;transition:all .2s;flex-shrink:0}
-.sb-collapse:hover{color:#fff;background:rgba(255,255,255,.1)}
-.sb-collapse svg{width:18px;height:18px;transition:transform .3s}
-.sidebar.mini .sb-collapse svg{transform:rotate(180deg)}
-.sidebar.mini .sb-name{opacity:0;width:0}
-.sidebar.mini .sb-brand{justify-content:center;padding:20px 0}
-.sidebar.mini .sb-collapse{display:none}
-
-.sb-nav{padding:14px 10px;display:flex;flex-direction:column;gap:6px;flex:1;overflow-y:auto}
-.sb-link{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:calc(var(--radius) * 0.5);
-	color:rgba(255,255,255,.6);text-decoration:none;font-size:.875rem;font-weight:600;
-  transition:all .2s var(--ease);cursor:pointer;white-space:nowrap;position:relative;overflow:hidden}
-.sb-link::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.02));opacity:0;transition:opacity .2s;border-radius:calc(var(--radius)*0.5)}
-.sb-link:hover::before{opacity:1}
-.sb-link:hover{color:rgba(255,255,255,.9)}
-.sb-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:calc(var(--radius)*0.5);
-	transition:background .2s,transform .2s;flex-shrink:0;background:rgba(255,255,255,.04)}
-.sb-icon svg{width:18px;height:18px}
-.sb-link.active{color:#fff}
-.sb-link.active{background:linear-gradient(90deg,rgba(255,255,255,.08),rgba(255,255,255,.03));box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
-.sb-link.active .sb-icon{background:linear-gradient(135deg,var(--primary),var(--secondary));box-shadow:0 8px 18px color-mix(in srgb,var(--primary) 40%,transparent);transform:translateY(-1px)}
-.sidebar.mini .sb-link span{opacity:0;width:0}
-.sidebar.mini .sb-nav{padding:12px 4px}
-.sidebar.mini .sb-link{justify-content:center;padding:10px 0}
-
-.sb-foot{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:8px}
-.sb-theme{display:flex;align-items:center;gap:10px;background:none;border:none;color:rgba(255,255,255,.45);
-  cursor:pointer;padding:8px;border-radius:calc(var(--radius)*0.5);font-size:.85rem;transition:all .2s;width:100%}
-.sb-theme:hover{color:#fff;background:rgba(255,255,255,.08)}
-.sb-theme svg{width:18px;height:18px;flex-shrink:0}
-.sidebar.mini .sb-theme span{display:none}
-.sidebar.mini .sb-theme{justify-content:center}
-.sidebar.mini .sb-foot{align-items:center}
-.sb-powered{font-size:.7rem;color:rgba(255,255,255,.2);text-align:center}
-.sidebar.mini .sb-powered{display:none}
-
-/* ===== Main ===== */
-.main{margin-left:288px;flex:1;min-height:100vh;transition:margin-left .3s var(--ease)}
-body.sb-mini .main{margin-left:72px}
-
-/* ===== Topbar ===== */
-.topbar{padding:14px 20px;display:flex;align-items:center;gap:16px;position:sticky;top:16px;z-index:30;
-	margin:16px 20px 0;border:1px solid var(--border);background:color-mix(in srgb,var(--card-bg) 88%,transparent);border-radius:22px;transition:background .3s;
-	backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:var(--shadow)}
-.tb-title-wrap{display:flex;flex-direction:column;gap:2px;min-width:0}
-.topbar h1{font-size:1.1rem;font-weight:800;letter-spacing:-.03em}
-.tb-sub{font-size:.78rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tb-menu{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:6px;border-radius:calc(var(--radius)*0.5)}
-.tb-menu svg{width:22px;height:22px}
-.tb-status{display:flex;align-items:center;gap:8px;flex:1;justify-content:center;min-width:0}
-.tb-chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:color-mix(in srgb,var(--bg2) 80%,transparent);border:1px solid var(--border);font-size:.78rem;font-weight:700;color:var(--text2);white-space:nowrap}
-.tb-dot{width:8px;height:8px;border-radius:50%;display:inline-block;box-shadow:0 0 0 4px transparent}
-.tb-dot-online{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.14)}
-.tb-dot-jobs{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.12)}
-.tb-dot-wa{background:#06b6d4;box-shadow:0 0 0 4px rgba(6,182,212,.12)}
-.tb-end{display:flex;align-items:center;gap:12px;margin-left:auto}
-.tb-search{position:relative;display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .2s,box-shadow .2s}
-.tb-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 12%,transparent)}
-.tb-search input{border:none;background:transparent;outline:none;font-size:.875rem;color:var(--text);width:200px;
-  padding:8px 12px 8px 36px;transition:width .3s;font-family:var(--font)}
-.tb-search input:focus{width:280px}
-.tb-search svg{position:absolute;left:10px;width:16px;height:16px;color:var(--text3);pointer-events:none}
-
-/* ===== Content ===== */
-.content{padding:24px 28px 40px}
-
-/* ===== Bento Grid ===== */
-.bento{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:28px}
-.bento-card{position:relative;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);
-	padding:24px;cursor:pointer;overflow:hidden;transition:all .3s var(--ease);box-shadow:var(--shadow);background-image:linear-gradient(180deg,rgba(255,255,255,.05),transparent)}
-.bento-card:hover{transform:translateY(-6px) scale(1.01);box-shadow:var(--shadow2);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))}
-.bc-icon{width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;
-	background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#fff));margin-bottom:16px;box-shadow:0 12px 28px color-mix(in srgb,var(--accent) 26%,transparent)}
-.bc-icon svg{width:24px;height:24px;color:#fff}
-.bc-num{font-size:clamp(1.75rem,3vw,2.25rem);font-weight:800;letter-spacing:-.03em;line-height:1}
-.bc-label{font-size:.85rem;color:var(--text2);font-weight:600;margin-top:6px}
-.bc-glow{position:absolute;top:-40%;right:-20%;width:120px;height:120px;border-radius:50%;
-  background:var(--accent);opacity:.06;filter:blur(40px);pointer-events:none;transition:opacity .3s}
-.bento-card:hover .bc-glow{opacity:.12}
-
-/* ===== Dashboard Grid ===== */
-.dash-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-@media(max-width:900px){.dash-grid{grid-template-columns:1fr}}
-
-/* ===== Card ===== */
-.card{background:color-mix(in srgb,var(--card-bg) 92%,transparent);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
-	overflow:hidden;transition:box-shadow .3s var(--ease),transform .3s var(--ease);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.card:hover{box-shadow:var(--shadow2);transform:translateY(-2px)}
-.card-head{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--border)}
-.card-head svg{width:18px;height:18px;color:var(--primary)}
-.card-head h3{font-size:.95rem;font-weight:600}
-
-/* ===== Activity ===== */
-.ativ-list{padding:8px 0;max-height:320px;overflow-y:auto}
-.ativ-row{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:.875rem;transition:background .15s}
-.ativ-row:hover{background:color-mix(in srgb,var(--primary) 4%,transparent)}
-.ativ-tag{font-size:.7rem;padding:2px 8px;border-radius:99px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
-.ativ-c{background:#16a34a}.ativ-e{background:var(--primary)}.ativ-d{background:#dc2626}
-.ativ-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ativ-time{color:var(--text3);font-size:.8rem;font-variant-numeric:tabular-nums;flex-shrink:0}
-
-/* ===== Info ===== */
-.info-list{padding:4px 0}
-.info-row{display:flex;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);font-size:.875rem}
-.info-row:last-child{border-bottom:none}
-.info-k{color:var(--text2);font-weight:500}.info-v{font-weight:600}
-
-/* ===== Charts ===== */
-.chart-card{margin-bottom:20px}
-.chart-wrap{padding:20px;min-height:120px}
-
-/* ===== Section ===== */
-.section{animation:fadeUp .35s var(--ease)}
+/* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.anim-in{animation:fadeUp .35s var(--ease)}
-.sec-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
-.sec-left{flex:1}
-.sec-left h2{font-size:1.28rem;font-weight:800;letter-spacing:-.03em}
-.sec-search{display:flex;align-items:center;max-width:380px;padding:0 14px;height:42px;background:var(--bg);
-  border:1px solid var(--border);border-radius:var(--radius);transition:border-color .2s,box-shadow .2s}
-.sec-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 12%,transparent)}
-.sec-search input{flex:1;border:none;background:none;outline:none;font-size:.875rem;color:var(--text);padding:0 8px;font-family:var(--font)}
-.sec-search input::placeholder{color:var(--text3)}
-.sec-search svg{width:16px;height:16px;color:var(--text3);flex-shrink:0}
-.sec-actions{display:flex;align-items:center;gap:8px}
+.section{animation:fadeUp .3s ease-out}
 
-/* ===== Table ===== */
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:12px 16px;font-weight:600;font-size:.75rem;text-transform:uppercase;
-  letter-spacing:.6px;color:var(--text3);background:var(--bg2);border-bottom:1px solid var(--border)}
-td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:.875rem;transition:background .15s}
-tr:hover td{background:color-mix(in srgb,var(--primary) 3%,transparent)}
-.td-id{font-weight:700;color:var(--text3);font-size:.8rem;width:50px}
-.th-id{width:50px}.th-act{width:90px;text-align:right}
-.td-act{text-align:right;white-space:nowrap}
-.row-anim{animation:fadeUp .25s var(--ease)}
+/* SVG sizing inside spans */
+span > svg, button > svg, div > svg, a > svg {width:100%;height:100%}
 
-/* Action btns */
-.act-btn{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
-  border:none;border-radius:calc(var(--radius)*0.5);cursor:pointer;transition:all .2s var(--ease);background:transparent}
-.act-btn svg{width:15px;height:15px}
-.act-edit{color:var(--primary)}.act-edit:hover{background:color-mix(in srgb,var(--primary) 10%,transparent);transform:scale(1.1)}
-.act-del{color:#ef4444}.act-del:hover{background:rgba(239,68,68,.1);transform:scale(1.1)}
+/* Toast show state */
+.toast-show{opacity:1!important;transform:translateY(0)!important;pointer-events:auto!important}
 
-/* ===== Pagination ===== */
-.pagination{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px 16px;border-top:1px solid var(--border)}
-.pagination button{min-width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
-  border:1px solid var(--border);border-radius:calc(var(--radius)*0.5);cursor:pointer;background:var(--bg);color:var(--text);
-  font-size:.8rem;font-weight:600;transition:all .2s}
-.pagination button:hover{border-color:var(--primary);color:var(--primary)}
-.pagination button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.pagination button:disabled{opacity:.4;cursor:default}
+/* Pagination buttons */
+.pg-btn{min-width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid;border-radius:8px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .2s}
 
-/* ===== Empty state ===== */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;color:var(--text3);gap:8px}
-.empty-state svg{width:40px;height:40px;opacity:.4}
-.empty-state p{font-size:.9rem}
-
-/* ===== Badges / Pills ===== */
-.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;border-radius:99px;font-size:.78rem;font-weight:600;
-  text-transform:capitalize;letter-spacing:.2px}
+/* Status pills */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 12px;border-radius:99px;font-size:.78rem;font-weight:600;text-transform:capitalize}
 .pill::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .pill-green{background:rgba(22,163,74,.1);color:#16a34a}.pill-green::before{background:#16a34a}
-body.dark .pill-green{background:rgba(22,163,74,.15);color:#4ade80}
+.dark .pill-green{background:rgba(22,163,74,.15);color:#4ade80}
 .pill-red{background:rgba(239,68,68,.1);color:#ef4444}.pill-red::before{background:#ef4444}
-body.dark .pill-red{background:rgba(239,68,68,.15);color:#fca5a5}
+.dark .pill-red{background:rgba(239,68,68,.15);color:#fca5a5}
 .pill-yellow{background:rgba(245,158,11,.1);color:#d97706}.pill-yellow::before{background:#f59e0b}
-body.dark .pill-yellow{background:rgba(245,158,11,.15);color:#fde047}
+.dark .pill-yellow{background:rgba(245,158,11,.15);color:#fde047}
 .pill-blue{background:rgba(59,130,246,.1);color:#3b82f6}.pill-blue::before{background:#3b82f6}
-body.dark .pill-blue{background:rgba(59,130,246,.15);color:#93c5fd}
+.dark .pill-blue{background:rgba(59,130,246,.15);color:#93c5fd}
 
-.money{font-variant-numeric:tabular-nums;font-weight:600;color:var(--primary)}
-.muted{color:var(--text3)}
-.link{color:var(--primary);text-decoration:none;font-weight:500}
-.link:hover{text-decoration:underline}
-
-/* ===== Buttons ===== */
-.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border:none;border-radius:var(--radius);
-  font-size:.875rem;font-weight:600;cursor:pointer;transition:all .25s var(--ease);text-decoration:none;
-  position:relative;overflow:hidden;font-family:var(--font)}
-.btn svg{width:16px;height:16px}
-.btn-glow{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;
-  box-shadow:0 2px 12px color-mix(in srgb,var(--primary) 35%,transparent)}
-.btn-glow:hover{transform:translateY(-2px);box-shadow:0 6px 24px color-mix(in srgb,var(--primary) 45%,transparent)}
-.btn-glow:active{transform:translateY(0)}
-.btn-ghost{background:var(--bg2);color:var(--text2);border:1px solid var(--border)}
-.btn-ghost:hover{background:var(--border);color:var(--text)}
-.btn-sm{padding:7px 14px;font-size:.8rem}
-.btn-sm svg{width:14px;height:14px}
-
-/* ===== Modal ===== */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center}
-.modal-overlay[style*="flex"]{display:flex!important}
-.form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:.85rem;font-weight:500;margin-bottom:6px;opacity:.8}
-.form-input{width:100%;padding:10px 14px;border-radius:calc(var(--radius)*0.6);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:.9rem;outline:none;transition:border .2s}
-.form-input:focus{border-color:var(--primary)}
-.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;padding:20px}
-.modal-wrap.show{display:flex}
-.modal{width:100%;max-width:500px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow3);
-  background:var(--card-solid,#1e1b4b);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid var(--border);border-radius:var(--radius);color:var(--text)}
-.anim-modal{animation:modalIn .3s var(--ease)}
-@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.modal-top{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
-.modal-top h2{font-size:1.05rem;font-weight:700}
-.modal-x{background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;border-radius:calc(var(--radius)*0.5);transition:all .2s}
-.modal-x:hover{background:var(--bg2);color:var(--text)}
-.modal-x svg{width:18px;height:18px}
-.modal-form{padding:16px 24px 24px}
-
-/* ===== Form fields ===== */
-.field{margin-bottom:16px}
-.field label{display:block;font-weight:600;margin-bottom:6px;font-size:.8rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1px solid var(--border);
-  border-radius:calc(var(--radius)*0.5);font-size:.9rem;background:var(--bg);color:var(--text);
-  transition:all .25s var(--ease);font-family:var(--font)}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--primary);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--primary) 10%,transparent);background:var(--card-solid)}
-.field input::placeholder,.field textarea::placeholder{color:var(--text3)}
-.field textarea{resize:vertical;min-height:80px}
-.field input[type="file"]{padding:8px;cursor:pointer}
-.upload-preview{min-height:0}
-.upload-preview img{display:block}
-.modal-foot{display:flex;gap:10px;padding-top:16px;border-top:1px solid var(--border)}
-
-/* ===== Toggle switch ===== */
-.switch{position:relative;display:inline-block;width:44px;height:24px;cursor:pointer}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;inset:0;background:var(--border);border-radius:24px;transition:.3s}
-.slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
-.switch input:checked+.slider{background:var(--primary)}
-.switch input:checked+.slider::before{transform:translateX(20px)}
-
-/* ===== Toast ===== */
-.toast{position:fixed;bottom:24px;right:24px;padding:14px 28px;border-radius:var(--radius);color:#fff;
-  font-weight:600;font-size:.9rem;z-index:200;opacity:0;transform:translateY(16px) scale(.95);
-  transition:all .35s var(--ease);pointer-events:none;backdrop-filter:blur(8px);font-family:var(--font)}
-.toast.show{opacity:1;transform:translateY(0) scale(1)}
-.toast.ok{background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 20px rgba(22,163,74,.35)}
-.toast.erro{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 20px rgba(239,68,68,.35)}
-
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-
-/* ===== Responsive ===== */
-.chat-shell{display:grid;grid-template-columns:340px 1fr;min-height:720px;overflow:hidden;background:linear-gradient(180deg,color-mix(in srgb,var(--card-bg) 95%,transparent),color-mix(in srgb,var(--bg2) 18%,transparent))}
-.chat-side{border-right:1px solid var(--border);display:flex;flex-direction:column;background:linear-gradient(180deg,color-mix(in srgb,var(--bg2) 66%,transparent),transparent)}
-.chat-side-top{padding:18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent)}
-.chat-filter{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:calc(var(--radius)*0.5);background:var(--bg);color:var(--text)}
-.chat-conv-list{overflow:auto;display:flex;flex-direction:column}
-.chat-conv{padding:14px 16px;border-bottom:1px solid color-mix(in srgb,var(--border) 65%,transparent);cursor:pointer;transition:background .2s,transform .2s;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
-.chat-conv:hover,.chat-conv.active{background:linear-gradient(90deg,color-mix(in srgb,var(--primary) 10%,transparent),transparent);transform:translateX(2px)}
-.chat-conv-avatar{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,color-mix(in srgb,var(--secondary) 70%,#fff),var(--primary));color:#fff;font-weight:800;letter-spacing:-.03em;box-shadow:0 10px 24px color-mix(in srgb,var(--primary) 18%,transparent)}
-.chat-conv-body{min-width:0}
-.chat-conv-name{font-weight:700;font-size:.92rem}
-.chat-conv-last{font-size:.82rem;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-conv-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:.75rem;color:var(--text3)}
-.chat-unread{min-width:24px;height:24px;padding:0 8px;border-radius:999px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#fff));color:#042225;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;box-shadow:0 8px 18px color-mix(in srgb,var(--accent) 18%,transparent)}
-.chat-main{display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--bg2) 14%,transparent))}
-.chat-main-top{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.04),transparent)}
-.chat-presence{font-size:.8rem;color:var(--text2);margin-top:4px}
-.chat-messages{flex:1;padding:24px;background:radial-gradient(circle at top left,color-mix(in srgb,var(--primary) 8%,transparent),transparent 28%),linear-gradient(180deg,color-mix(in srgb,var(--bg2) 78%,transparent),transparent);overflow:auto;display:flex;flex-direction:column;gap:12px}
-.chat-bubble{max-width:min(72%,680px);padding:13px 15px;border-radius:18px;background:var(--bg);border:1px solid var(--border);box-shadow:var(--shadow);position:relative}
-.chat-bubble.mine{align-self:flex-end;background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 18%,var(--card-solid)),color-mix(in srgb,var(--secondary) 14%,var(--card-solid)));border-bottom-right-radius:8px}
+/* Chat bubbles */
+.chat-bubble{max-width:min(72%,680px);padding:13px 15px;border-radius:18px;position:relative}
+.chat-bubble.mine{align-self:flex-end;border-bottom-right-radius:8px}
 .chat-bubble.other{align-self:flex-start}
-.chat-bubble-meta{font-size:.72rem;color:var(--text3);margin-top:6px}
-.chat-media{margin-top:8px}
+.chat-bubble-meta{font-size:.72rem;margin-top:6px}
 .chat-media img,.chat-media video{max-width:100%;border-radius:12px}
 .chat-media audio{width:100%}
-.chat-compose{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--border);align-items:center;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--bg2) 18%,transparent))}
-.chat-compose input[type="file"]{max-width:180px}
-.chat-compose input[type="text"]{flex:1;padding:13px 16px;border:1px solid var(--border);border-radius:999px;background:color-mix(in srgb,var(--bg) 88%,transparent);color:var(--text)}
-.chat-typing{min-height:20px;padding:0 18px 8px;color:var(--text2);font-size:.78rem}
-@media(max-width:768px){
-  .sidebar{transform:translateX(-100%)}
-  .sidebar.open{transform:translateX(0)}
-  .main{margin-left:0!important}
-  .tb-menu{display:block}
-  .content{padding:16px}
-  .bento{grid-template-columns:1fr 1fr}
-  .sec-head{flex-direction:column;align-items:stretch}
-  .sec-search{max-width:100%}
-  .tb-search input{width:140px}
-	.tb-status{display:none}
-  .modal{max-width:95vw}
-  .dash-grid{grid-template-columns:1fr}
-	.chat-shell{grid-template-columns:1fr;min-height:unset}
-	.chat-side{max-height:240px}
-}
-@media(max-width:480px){
-  .bento{grid-template-columns:1fr}
-  .content{padding:12px}
-}
 
-` + styleCSS
+/* Chat conversation item */
+.chat-conv{padding:14px 16px;cursor:pointer;transition:background .2s;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center}
+
+/* Responsive sidebar */
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%);z-index:100}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-left:0!important}
+  .chat-grid-responsive{grid-template-columns:1fr!important;min-height:unset!important}
+}
+`
 
 	// Inject user custom CSS
 	if theme.CustomCSS != "" {
@@ -1055,70 +792,9 @@ body.dark .pill-blue{background:rgba(59,130,246,.15);color:#93c5fd}
 }
 
 // styleVariantCSS returns extra CSS for the chosen style variant.
+// With Tailwind, this is simplified since most styling is in classes.
 func (s *Servidor) styleVariantCSS(style string) string {
-	switch style {
-	case "flat":
-		return `
-/* === Flat Style === */
-.card,.modal,.topbar,.bento-card{backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none!important}
-.card{background:var(--card-solid);border:1px solid var(--border)}
-.modal{background:var(--card-solid)}
-.topbar{background:var(--card-solid);backdrop-filter:none}
-.bento-card{background:var(--card-solid)}
-.bento-card:hover{transform:none;box-shadow:none!important}
-.bc-glow{display:none}
-.btn-glow{box-shadow:none}
-.btn-glow:hover{transform:none;box-shadow:none}
-`
-	case "neumorphism":
-		return `
-/* === Neumorphism Style === */
-.card,.bento-card{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg);border:none;
-  box-shadow:6px 6px 12px color-mix(in srgb,var(--bg) 80%,#000),
-             -6px -6px 12px color-mix(in srgb,var(--bg) 80%,#fff)!important}
-.card:hover,.bento-card:hover{box-shadow:8px 8px 16px color-mix(in srgb,var(--bg) 75%,#000),
-             -8px -8px 16px color-mix(in srgb,var(--bg) 75%,#fff)!important}
-body.dark .card,body.dark .bento-card{
-  box-shadow:6px 6px 12px rgba(0,0,0,.4),-6px -6px 12px rgba(255,255,255,.03)!important}
-body.dark .card:hover,body.dark .bento-card:hover{
-  box-shadow:8px 8px 16px rgba(0,0,0,.5),-8px -8px 16px rgba(255,255,255,.04)!important}
-.modal{backdrop-filter:none;background:var(--bg);border:none;
-  box-shadow:8px 8px 20px color-mix(in srgb,var(--bg) 75%,#000),
-             -8px -8px 20px color-mix(in srgb,var(--bg) 75%,#fff)!important}
-.bc-glow{display:none}
-.bento-card:hover{transform:translateY(-2px)}
-.field input,.field select,.field textarea{border:none;
-  box-shadow:inset 3px 3px 6px color-mix(in srgb,var(--bg) 85%,#000),
-             inset -3px -3px 6px color-mix(in srgb,var(--bg) 85%,#fff)}
-.field input:focus,.field select:focus,.field textarea:focus{
-  box-shadow:inset 3px 3px 6px color-mix(in srgb,var(--bg) 85%,#000),
-             inset -3px -3px 6px color-mix(in srgb,var(--bg) 85%,#fff),
-             0 0 0 3px color-mix(in srgb,var(--primary) 15%,transparent)}
-`
-	case "minimal":
-		return `
-/* === Minimal Style === */
-.card,.bento-card,.modal{backdrop-filter:none;-webkit-backdrop-filter:none;background:transparent;
-  box-shadow:none!important;border:1px solid var(--border);border-radius:calc(var(--radius)*0.5)}
-.topbar{background:transparent;backdrop-filter:none;border-bottom:1px solid var(--border)}
-.bento-card{padding:20px}
-.bento-card:hover{transform:none;border-color:var(--primary)}
-.bc-glow{display:none}
-.bc-icon{border-radius:8px;width:40px;height:40px}
-.btn-glow{box-shadow:none;border-radius:calc(var(--radius)*0.3)}
-.btn-glow:hover{transform:none;box-shadow:0 2px 8px color-mix(in srgb,var(--primary) 20%,transparent)}
-.card-head{padding:14px 16px}
-.content{padding:32px 40px}
-@media(max-width:768px){.content{padding:16px}}
-`
-	default: // glassmorphism (default)
-		return `
-/* === Glassmorphism Style === */
-.card{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.modal{backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
-.topbar{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-`
-	}
+	return ""
 }
 
 // ============================================================
@@ -1171,11 +847,18 @@ function esc(v){if(v==null)return'';var d=document.createElement('div');d.textCo
 
 // ===== Navigation =====
 function irPara(n,el){
-  document.querySelectorAll('.section').forEach(function(s){s.style.display='none';});
+  document.querySelectorAll('.section').forEach(function(s){s.classList.add('hidden');});
   var sec=$('secao-'+n);
-  if(sec){sec.style.display='block';sec.classList.add('anim-in');}
-  document.querySelectorAll('.sb-link').forEach(function(a){a.classList.remove('active');});
-  if(el)el.classList.add('active');
+  if(sec){sec.classList.remove('hidden');}
+  // Update sidebar active state
+  document.querySelectorAll('.nav-item').forEach(function(a){
+    a.classList.remove('bg-primary/10','text-primary');
+    a.classList.add('text-gray-500','dark:text-gray-400');
+  });
+  if(el){
+    el.classList.add('bg-primary/10','text-primary');
+    el.classList.remove('text-gray-500','dark:text-gray-400');
+  }
   var title=n==='dashboard'?'Dashboard':n.replace('screen-','').charAt(0).toUpperCase()+n.replace('screen-','').slice(1);
   $('page-title').textContent=title;
   if(innerWidth<768)$('sidebar').classList.remove('open');
@@ -1185,29 +868,42 @@ function irPara(n,el){
   if(n!=='dashboard'&&!n.startsWith('screen-')){carregar(n);}
 }
 function irParaNav(n){
-  var links=document.querySelectorAll('.sb-link');
-  for(var i=0;i<links.length;i++){if(links[i].querySelector('span').textContent.toLowerCase()===n){irPara(n,links[i]);return;}}
+  var links=document.querySelectorAll('.nav-item');
+  for(var i=0;i<links.length;i++){
+    var sp=links[i].querySelector('span:last-child');
+    if(sp&&sp.textContent.toLowerCase()===n){irPara(n,links[i]);return;}
+  }
   irPara(n,null);
 }
 
 function toggleSidebar(){$('sidebar').classList.toggle('open');}
-function toggleCollapse(){document.body.classList.toggle('sb-mini');$('sidebar').classList.toggle('mini');}
-function toggleDark(){document.body.classList.toggle('dark');}
+function toggleDark(){document.documentElement.classList.toggle('dark');}
 
-function toast(msg,t){var e=$('toast');e.textContent=msg;e.className='toast show '+(t||'ok');setTimeout(function(){e.className='toast';},3000);}
+function toast(msg,t){
+  var e=$('toast');e.textContent=msg;
+  e.className='fixed bottom-4 right-4 z-[10000] px-4 py-3 rounded-xl shadow-lg transition-all duration-300 toast-show text-white font-medium text-sm';
+  if(t==='erro'){e.classList.add('bg-red-600');}else{e.classList.add('bg-green-600');}
+  setTimeout(function(){e.className='fixed bottom-4 right-4 z-[10000] px-4 py-3 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none';},3000);
+}
 
 // ===== Form open/close =====
 function abrirForm(m){
-  $('modal-'+m).classList.add('show');
+  var modal=$('modal-'+m);
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
   $(m+'-id').value='';
-  $('modal-'+m).querySelector('form').reset();
+  modal.querySelector('form').reset();
   $('titulo-form-'+m).textContent='Novo '+m.charAt(0).toUpperCase()+m.slice(1);
   M[m].forEach(function(c){
     if(c.t==='f'){var prev=$(m+'-'+c.n+'-preview');if(prev)prev.innerHTML='';}
   });
   carregarSelects(m);
 }
-function fecharForm(m){$('modal-'+m).classList.remove('show');}
+function fecharForm(m){
+  var modal=$('modal-'+m);
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
 
 // ===== Search / Filter =====
 function filtrar(m,q){
@@ -1227,16 +923,16 @@ function uploadFile(m,fname,input){
   if(!input.files||!input.files[0])return;
   var fd=new FormData();fd.append('file',input.files[0]);
   var prev=$(m+'-'+fname+'-preview');
-  if(prev)prev.innerHTML='<span style="color:var(--text2);font-size:.85rem">Enviando...</span>';
+  if(prev)prev.innerHTML='<span class="text-gray-500 text-sm">Enviando...</span>';
   fetch('/upload',{method:'POST',body:fd})
     .then(function(r){if(!r.ok)throw new Error('Upload falhou');return r.json();})
     .then(function(d){
       $(m+'-'+fname).value=d.path;
       if(prev){
         if(d.path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)){
-          prev.innerHTML='<img src="'+esc(d.path)+'" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:6px">';
+          prev.innerHTML='<img src="'+esc(d.path)+'" class="max-w-full max-h-28 rounded-lg mt-1">';
         }else{
-          prev.innerHTML='<span style="color:var(--primary);font-size:.85rem;margin-top:4px;display:block">'+esc(d.name)+' &#10003;</span>';
+          prev.innerHTML='<span class="text-primary text-sm mt-1 block">'+esc(d.name)+' &#10003;</span>';
         }
       }
     })
@@ -1267,15 +963,15 @@ function carregarSelects(m){
 // ===== Table cell formatting =====
 function fmtCell(v,t){
   var s=esc(v);
-  if(!s||s==='-')return'<span class="muted">&#8212;</span>';
+  if(!s||s==='-')return'<span class="text-gray-400">&#8212;</span>';
   if(t==='s')return'<span class="pill pill-'+pillColor(v)+'">'+s+'</span>';
-  if(t==='d'){var n=parseFloat(v);return'<span class="money">R$&nbsp;'+n.toFixed(2)+'</span>';}
-  if(t==='e')return'<a class="link" href="mailto:'+s+'">'+s+'</a>';
+  if(t==='d'){var n=parseFloat(v);return'<span class="font-semibold text-primary tabular-nums">R$&nbsp;'+n.toFixed(2)+'</span>';}
+  if(t==='e')return'<a class="text-primary hover:underline font-medium" href="mailto:'+s+'">'+s+'</a>';
   if(t==='en')return'<span class="pill pill-blue">'+s+'</span>';
   if(t==='b'){return v?'<span class="pill pill-green">Sim</span>':'<span class="pill pill-red">N&atilde;o</span>';}
   if(t==='f'){
-    if(String(v).match(/\.(jpg|jpeg|png|gif|webp|svg)$/i))return'<img src="'+s+'" style="max-height:40px;border-radius:4px">';
-    return'<a class="link" href="'+s+'" target="_blank">'+s.split('/').pop()+'</a>';
+    if(String(v).match(/\.(jpg|jpeg|png|gif|webp|svg)$/i))return'<img src="'+s+'" class="max-h-10 rounded">';
+    return'<a class="text-primary hover:underline font-medium" href="'+s+'" target="_blank">'+s.split('/').pop()+'</a>';
   }
   if(t==='tl'){return s.length>60?s.substring(0,60)+'...':s;}
   return s;
@@ -1301,54 +997,59 @@ function renderAtiv(){
   var el=$('atividade');
   if(!ativs.length)return;
   var h='';ativs.forEach(function(a){
-    h+='<div class="ativ-row"><span class="ativ-tag ativ-'+a.t+'">'+a.l+'</span>';
-    h+='<span class="ativ-txt"><b>'+esc(a.m)+'</b>';
+    var tagClass=a.t==='c'?'bg-green-600':a.t==='e'?'bg-primary':'bg-red-600';
+    h+='<div class="flex items-center gap-3 px-5 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">';
+    h+='<span class="text-[10px] px-2 py-0.5 rounded-full font-bold text-white uppercase tracking-wide '+tagClass+'">'+a.l+'</span>';
+    h+='<span class="flex-1 truncate"><b>'+esc(a.m)+'</b>';
     if(a.n)h+=' \u2014 '+esc(a.n);
-    h+='</span><span class="ativ-time">'+a.h+'</span></div>';
+    h+='</span><span class="text-gray-400 text-xs tabular-nums flex-shrink-0">'+a.h+'</span></div>';
   });
   el.innerHTML=h;
 }
 
 function renderTableRows(tb,m,items){
-	var cs=M[m];
-	if(!tb||!cs)return;
-	tb.innerHTML='';
-	(items||[]).forEach(function(item){
-		var tr=document.createElement('tr');tr.className='row-anim';
-		var h='<td class="td-id">'+item.id+'</td>';
-		cs.forEach(function(c){
-			if(c.t==='pw')return;
-			h+='<td>'+fmtCell(item[c.n],c.t)+'</td>';
-		});
-		h+='<td class="td-act"><button class="act-btn act-edit" onclick="editar(\''+m+'\','+item.id+')">'+ICO_E+'</button>';
-		h+='<button class="act-btn act-del" onclick="excluir(\''+m+'\','+item.id+')">'+ICO_D+'</button></td>';
-		tr.innerHTML=h;tb.appendChild(tr);
-	});
+  var cs=M[m];
+  if(!tb||!cs)return;
+  tb.innerHTML='';
+  (items||[]).forEach(function(item){
+    var tr=document.createElement('tr');
+    tr.className='hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors';
+    var h='<td class="px-4 py-3 text-sm font-bold text-gray-400 w-12">'+item.id+'</td>';
+    cs.forEach(function(c){
+      if(c.t==='pw')return;
+      h+='<td class="px-4 py-3 text-sm">'+fmtCell(item[c.n],c.t)+'</td>';
+    });
+    h+='<td class="px-4 py-3 text-right whitespace-nowrap">';
+    h+='<button class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-all" onclick="editar(\''+m+'\','+item.id+')"><span class="w-4 h-4">'+ICO_E+'</span></button>';
+    h+='<button class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 transition-all" onclick="excluir(\''+m+'\','+item.id+')"><span class="w-4 h-4">'+ICO_D+'</span></button>';
+    h+='</td>';
+    tr.innerHTML=h;tb.appendChild(tr);
+  });
 }
 
 function carregarListasInline(modelo){
-	var selector=modelo?'[data-list-model="'+modelo+'"]':'[data-list-model]';
-	document.querySelectorAll(selector).forEach(function(card){
-		var m=card.getAttribute('data-list-model');
-		var tb=card.querySelector('tbody');
-		var vazio=card.querySelector('.empty-state');
-		var table=card.querySelector('table');
-		if(!m||!tb||!table)return;
-		fetch('/api/'+m).then(function(r){return r.json();}).then(function(items){
-			items=items||[];
-			renderTableRows(tb,m,items);
-			if(!items.length){
-				if(vazio)vazio.style.display='flex';
-				table.style.display='none';
-				return;
-			}
-			if(vazio)vazio.style.display='none';
-			table.style.display='';
-		}).catch(function(){
-			if(vazio)vazio.style.display='flex';
-			table.style.display='none';
-		});
-	});
+  var selector=modelo?'[data-list-model="'+modelo+'"]':'[data-list-model]';
+  document.querySelectorAll(selector).forEach(function(card){
+    var m=card.getAttribute('data-list-model');
+    var tb=card.querySelector('tbody');
+    var vazio=card.querySelector('.flex.flex-col.items-center');
+    var table=card.querySelector('table');
+    if(!m||!tb||!table)return;
+    fetch('/api/'+m).then(function(r){return r.json();}).then(function(items){
+      items=items||[];
+      renderTableRows(tb,m,items);
+      if(!items.length){
+        if(vazio)vazio.style.display='flex';
+        table.style.display='none';
+        return;
+      }
+      if(vazio)vazio.style.display='none';
+      table.style.display='';
+    }).catch(function(){
+      if(vazio)vazio.style.display='flex';
+      table.style.display='none';
+    });
+  });
 }
 
 // ===== Data loading with pagination =====
@@ -1362,11 +1063,11 @@ function carregar(m,page){
     var total=items?items.length:0;
     if(st)st.textContent=total;
     if(!items||!items.length){
-      vz.style.display='flex';tb.closest('table').style.display='none';
+      if(vz)vz.style.display='flex';if(tb.closest('table'))tb.closest('table').style.display='none';
       var pg=$('paginacao-'+m);if(pg)pg.innerHTML='';
       return;
     }
-    vz.style.display='none';tb.closest('table').style.display='';
+    if(vz)vz.style.display='none';if(tb.closest('table'))tb.closest('table').style.display='';
 
     // Pagination
     var totalPages=Math.ceil(total/PAGE_SIZE);
@@ -1374,21 +1075,24 @@ function carregar(m,page){
     var end=Math.min(start+PAGE_SIZE,total);
     var pageItems=items.slice(start,end);
 
-    var cs=M[m];
-		renderTableRows(tb,m,pageItems);
+    renderTableRows(tb,m,pageItems);
 
     // Render pagination controls
     var pg=$('paginacao-'+m);
     if(pg&&totalPages>1){
-      var ph='<button '+(page<=1?'disabled':'')+' onclick="carregar(\''+m+'\','+(page-1)+')">&laquo;</button>';
+      var btnBase='min-w-[34px] h-[34px] inline-flex items-center justify-center border rounded-lg cursor-pointer text-xs font-semibold transition-all ';
+      var btnNormal=btnBase+'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-primary hover:text-primary';
+      var btnActive=btnBase+'bg-primary text-white border-primary';
+      var btnDisabled=btnBase+'border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-default opacity-40';
+      var ph='<button class="'+(page<=1?btnDisabled:btnNormal)+'" '+(page<=1?'disabled':'')+' onclick="carregar(\''+m+'\','+(page-1)+')">&laquo;</button>';
       for(var i=1;i<=totalPages;i++){
         if(totalPages>7&&Math.abs(i-page)>2&&i!==1&&i!==totalPages){
-          if(i===2||i===totalPages-1)ph+='<button disabled>...</button>';
+          if(i===2||i===totalPages-1)ph+='<button class="'+btnDisabled+'" disabled>...</button>';
           continue;
         }
-        ph+='<button class="'+(i===page?'active':'')+'" onclick="carregar(\''+m+'\','+i+')">'+i+'</button>';
+        ph+='<button class="'+(i===page?btnActive:btnNormal)+'" onclick="carregar(\''+m+'\','+i+')">'+i+'</button>';
       }
-      ph+='<button '+(page>=totalPages?'disabled':'')+' onclick="carregar(\''+m+'\','+(page+1)+')">&raquo;</button>';
+      ph+='<button class="'+(page>=totalPages?btnDisabled:btnNormal)+'" '+(page>=totalPages?'disabled':'')+' onclick="carregar(\''+m+'\','+(page+1)+')">&raquo;</button>';
       pg.innerHTML=ph;
     }else if(pg){pg.innerHTML='';}
   });
@@ -1405,7 +1109,7 @@ function salvar(m,e){
   });
   fetch(id?'/api/'+m+'/'+id:'/api/'+m,{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)})
     .then(function(r){if(!r.ok)return r.json().then(function(e){throw new Error(e.erro||e.error||'Erro');});return r.json();})
-		.then(function(){fecharForm(m);carregar(m);carregarListasInline(m);addAtiv(id?'e':'c',m,d[M[m][0].n]||'');toast(id?'Atualizado!':'Criado!');renderCharts();})
+    .then(function(){fecharForm(m);carregar(m);carregarListasInline(m);addAtiv(id?'e':'c',m,d[M[m][0].n]||'');toast(id?'Atualizado!':'Criado!');renderCharts();})
     .catch(function(err){toast('Erro: '+err.message,'erro');});
 }
 
@@ -1422,24 +1126,26 @@ function editar(m,id){
         var prev=$(m+'-'+c.n+'-preview');
         if(prev&&item[c.n]){
           if(String(item[c.n]).match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)){
-            prev.innerHTML='<img src="'+esc(item[c.n])+'" style="max-width:100%;max-height:120px;border-radius:8px;margin-top:6px">';
+            prev.innerHTML='<img src="'+esc(item[c.n])+'" class="max-w-full max-h-28 rounded-lg mt-1">';
           }else{
-            prev.innerHTML='<span style="color:var(--primary);font-size:.85rem;margin-top:4px;display:block">'+esc(item[c.n])+'</span>';
+            prev.innerHTML='<span class="text-primary text-sm mt-1 block">'+esc(item[c.n])+'</span>';
           }
         }
       }
       if(c.r&&el){setTimeout(function(){el.value=item[c.n]||'';},300);}
     });
     $('titulo-form-'+m).textContent='Editar';
-    $('modal-'+m).classList.add('show');
+    var modal=$('modal-'+m);
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
   });
 }
 
 function excluir(m,id){
   if(!confirm('Excluir #'+id+'?'))return;
   var tb=$('tabela-'+m),rows=tb.querySelectorAll('tr'),label='';
-  rows.forEach(function(r){if(r.querySelector('.td-id')&&r.querySelector('.td-id').textContent==id){label=r.children[1]?r.children[1].textContent:'';}});
-	fetch('/api/'+m+'/'+id,{method:'DELETE'}).then(function(){carregar(m);carregarListasInline(m);addAtiv('d',m,label);toast('Excluido!');renderCharts();});
+  rows.forEach(function(r){var td=r.querySelector('td');if(td&&td.textContent==id){label=r.children[1]?r.children[1].textContent:'';}});
+  fetch('/api/'+m+'/'+id,{method:'DELETE'}).then(function(){carregar(m);carregarListasInline(m);addAtiv('d',m,label);toast('Excluido!');renderCharts();});
 }
 
 function exportar(m,fmt){
@@ -1451,20 +1157,22 @@ var chartInstances={};
 var CHATS={};
 
 function refreshSystemStatus(){
-	fetch('/api/_jobs/status').then(function(r){return r.json();}).then(function(d){
-		var queued=(d&&d.queued)||0, running=(d&&d.running)||0;
-		if($('tb-jobs')) $('tb-jobs').textContent='jobs '+queued+'/'+running;
-	}).catch(function(){});
-	fetch('/api/whatsapp/sessions').then(function(r){if(!r.ok) throw new Error(); return r.json();}).then(function(items){
-		var connected=(items||[]).filter(function(it){return !!it.connected;}).length;
-		if($('tb-wa')) $('tb-wa').textContent=connected>0?('whatsapp '+connected+' online'):('whatsapp offline');
-	}).catch(function(){ if($('tb-wa')) $('tb-wa').textContent='whatsapp offline'; });
-	if($('tb-sockets') && typeof ws!=='undefined' && ws){ $('tb-sockets').textContent='tempo real ativo'; }
+  fetch('/api/_jobs/status').then(function(r){return r.json();}).then(function(d){
+    var queued=(d&&d.queued)||0, running=(d&&d.running)||0;
+    if($('tb-jobs')) $('tb-jobs').textContent='jobs '+queued+'/'+running;
+  }).catch(function(){});
+  fetch('/api/whatsapp/sessions').then(function(r){if(!r.ok) throw new Error(); return r.json();}).then(function(items){
+    var connected=(items||[]).filter(function(it){return !!it.connected;}).length;
+    if($('tb-wa')) $('tb-wa').textContent=connected>0?('whatsapp '+connected+' online'):('whatsapp offline');
+  }).catch(function(){ if($('tb-wa')) $('tb-wa').textContent='whatsapp offline'; });
+  if($('tb-sockets') && typeof ws!=='undefined' && ws){ $('tb-sockets').textContent='tempo real ativo'; }
 }
 
 function renderCharts(){
   fetch('/api/_stats').then(function(r){return r.json();}).then(function(stats){
     var models=Object.keys(stats);
+    var isDark=document.documentElement.classList.contains('dark');
+    var textColor=isDark?'#9ca3af':'#6b7280';
 
     // Bar chart - records per model
     var el=$('chart-models');
@@ -1477,8 +1185,8 @@ function renderCharts(){
         type:'bar',
         data:{labels:labels,datasets:[{label:'Registros',data:data,backgroundColor:bgColors,borderRadius:6,borderSkipped:false}]},
         options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-          scales:{y:{beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'},ticks:{color:getComputedStyle(document.body).getPropertyValue('--text2').trim()}},
-                  x:{grid:{display:false},ticks:{color:getComputedStyle(document.body).getPropertyValue('--text2').trim()}}}}
+          scales:{y:{beginAtZero:true,grid:{color:isDark?'rgba(128,128,128,0.1)':'rgba(0,0,0,0.06)'},ticks:{color:textColor}},
+                  x:{grid:{display:false},ticks:{color:textColor}}}}
       });
     }
 
@@ -1500,7 +1208,7 @@ function renderCharts(){
           data:{labels:sKeys.map(function(k){return k.charAt(0).toUpperCase()+k.slice(1);}),
                 datasets:[{data:sKeys.map(function(k){return statusData[k];}),backgroundColor:sColors,borderWidth:0}]},
           options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
-            plugins:{legend:{position:'bottom',labels:{color:getComputedStyle(document.body).getPropertyValue('--text').trim(),padding:16,usePointStyle:true,pointStyle:'circle'}}}}
+            plugins:{legend:{position:'bottom',labels:{color:textColor,padding:16,usePointStyle:true,pointStyle:'circle'}}}}
         });
       }
     }
@@ -1514,7 +1222,6 @@ function renderCharts(){
       fetch('/api/'+cmodel).then(function(r){return r.json();}).then(function(items){
         if(!items||!items.length)return;
         if(chartInstances[cid])chartInstances[cid].destroy();
-        // Try to find a numeric field and a label field
         var cs=M[cmodel];if(!cs)return;
         var numField=null,labelField=null;
         cs.forEach(function(c){if(!numField&&(c.t==='n'||c.t==='d'))numField=c.n;if(!labelField&&c.t==='t')labelField=c.n;});
@@ -1532,7 +1239,7 @@ function renderCharts(){
           options:{responsive:true,maintainAspectRatio:false,
             plugins:{legend:{display:false}},
             scales:ctype==='doughnut'||ctype==='pie'?{}:{
-              y:{beginAtZero:true,grid:{color:'rgba(128,128,128,0.1)'}},
+              y:{beginAtZero:true,grid:{color:isDark?'rgba(128,128,128,0.1)':'rgba(0,0,0,0.06)'}},
               x:{grid:{display:false}}}}
         });
       });
@@ -1548,12 +1255,12 @@ function connectWS(){
   ws.onmessage=function(e){
     try{
       var msg=JSON.parse(e.data);
-			if(msg.model){carregar(msg.model);carregarListasInline(msg.model);renderCharts();chatHandleUpdate(msg);}
-			if(msg.type==='presenca'||msg.type==='digitando'||msg.type==='presenca_socket'){chatHandlePresence(msg);}
-			if(msg.type==='qr'){toast('QR code atualizado para sessao '+(msg.session||'default'));}
-			if(msg.type==='whatsapp_status'&&msg.data&&msg.data.status){toast('WhatsApp '+msg.data.status);}
-			if(msg.type==='presenca_socket'&&$('tb-sockets')&&msg.data){$('tb-sockets').textContent=(msg.data.connections||0)+' conexoes';}
-			if(msg.type==='whatsapp_status'){refreshSystemStatus();}
+      if(msg.model){carregar(msg.model);carregarListasInline(msg.model);renderCharts();chatHandleUpdate(msg);}
+      if(msg.type==='presenca'||msg.type==='digitando'||msg.type==='presenca_socket'){chatHandlePresence(msg);}
+      if(msg.type==='qr'){toast('QR code atualizado para sessao '+(msg.session||'default'));}
+      if(msg.type==='whatsapp_status'&&msg.data&&msg.data.status){toast('WhatsApp '+msg.data.status);}
+      if(msg.type==='presenca_socket'&&$('tb-sockets')&&msg.data){$('tb-sockets').textContent=(msg.data.connections||0)+' conexoes';}
+      if(msg.type==='whatsapp_status'){refreshSystemStatus();}
     }catch(ex){}
   };
   ws.onclose=function(){setTimeout(connectWS,2000);};
@@ -1561,167 +1268,167 @@ function connectWS(){
 }
 
 function initChats(){
-	document.querySelectorAll('[data-chat-target]').forEach(function(el){
-		var target=el.getAttribute('data-chat-target');
-		CHATS[target]={
-			target:target,
-			messages:el.getAttribute('data-chat-messages')||'mensagem',
-			relation:el.getAttribute('data-chat-relation')||target,
-			textField:el.getAttribute('data-chat-text')||'corpo',
-			mediaField:el.getAttribute('data-chat-media')||'media_url',
-			authorField:el.getAttribute('data-chat-author')||'de_mim',
-			timeField:el.getAttribute('data-chat-time')||'criado_em',
-			typeField:el.getAttribute('data-chat-type')||'tipo',
-			active:null,
-			items:[]
-		};
-		loadChatConversations(target);
-	});
+  document.querySelectorAll('[data-chat-target]').forEach(function(el){
+    var target=el.getAttribute('data-chat-target');
+    CHATS[target]={
+      target:target,
+      messages:el.getAttribute('data-chat-messages')||'mensagem',
+      relation:el.getAttribute('data-chat-relation')||target,
+      textField:el.getAttribute('data-chat-text')||'corpo',
+      mediaField:el.getAttribute('data-chat-media')||'media_url',
+      authorField:el.getAttribute('data-chat-author')||'de_mim',
+      timeField:el.getAttribute('data-chat-time')||'criado_em',
+      typeField:el.getAttribute('data-chat-type')||'tipo',
+      active:null,
+      items:[]
+    };
+    loadChatConversations(target);
+  });
 }
 
 function loadChatConversations(target){
-	var c=CHATS[target]; if(!c) return;
-	fetch('/api/'+target).then(function(r){return r.json();}).then(function(items){
-		c.items=items||[];
-		var box=$('chat-conv-'+target); if(!box) return;
-		box.innerHTML='';
-		if(!items||!items.length){ box.innerHTML='<div class="empty-state"><p>Sem conversas</p></div>'; return; }
-		items.forEach(function(item){
-			var name=item.nome||item.titulo||item.numero||item.id;
-			var last=item.ultima_mensagem||item.last_message||'';
-			var unread=item.nao_lidas||0;
-			var initials=String(name).trim().split(/\s+/).slice(0,2).map(function(part){return part.charAt(0).toUpperCase();}).join('');
-			var div=document.createElement('div');
-			div.className='chat-conv'+(String(c.active)===String(item.id)?' active':'');
-			div.innerHTML='<div class="chat-conv-avatar">'+esc(initials||'#')+'</div><div class="chat-conv-body"><div class="chat-conv-name">'+esc(name)+'</div><div class="chat-conv-last">'+esc(last||'Sem mensagens')+'</div><div class="chat-conv-meta"><span>'+esc(item.status||'')+'</span><span>'+esc(item.numero||'')+'</span></div></div><div>'+(unread?('<span class="chat-unread">'+unread+'</span>'):'')+'</div>';
-			div.onclick=function(){openChat(target,item.id,name);};
-			box.appendChild(div);
-		});
-		if(!c.active&&items[0]) openChat(target,items[0].id,items[0].nome||items[0].titulo||items[0].numero||items[0].id);
-	}).catch(function(){ var box=$('chat-conv-'+target); if(box) box.innerHTML='<div class="empty-state"><p>Erro ao carregar conversas</p></div>'; });
+  var c=CHATS[target]; if(!c) return;
+  fetch('/api/'+target).then(function(r){return r.json();}).then(function(items){
+    c.items=items||[];
+    var box=$('chat-conv-'+target); if(!box) return;
+    box.innerHTML='';
+    if(!items||!items.length){ box.innerHTML='<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">Sem conversas</p></div>'; return; }
+    items.forEach(function(item){
+      var name=item.nome||item.titulo||item.numero||item.id;
+      var last=item.ultima_mensagem||item.last_message||'';
+      var unread=item.nao_lidas||0;
+      var initials=String(name).trim().split(/\s+/).slice(0,2).map(function(part){return part.charAt(0).toUpperCase();}).join('');
+      var div=document.createElement('div');
+      div.className='chat-conv border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50'+(String(c.active)===String(item.id)?' bg-primary/5':'');
+      div.innerHTML='<div class="w-11 h-11 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center text-white font-bold text-sm">'+esc(initials||'#')+'</div><div class="min-w-0"><div class="font-semibold text-sm">'+esc(name)+'</div><div class="text-xs text-gray-500 mt-1 truncate">'+esc(last||'Sem mensagens')+'</div><div class="flex justify-between gap-2 mt-1 text-xs text-gray-400"><span>'+esc(item.status||'')+'</span><span>'+esc(item.numero||'')+'</span></div></div><div>'+(unread?('<span class="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full bg-accent text-white text-xs font-bold">'+unread+'</span>'):'')+'</div>';
+      div.onclick=function(){openChat(target,item.id,name);};
+      box.appendChild(div);
+    });
+    if(!c.active&&items[0]) openChat(target,items[0].id,items[0].nome||items[0].titulo||items[0].numero||items[0].id);
+  }).catch(function(){ var box=$('chat-conv-'+target); if(box) box.innerHTML='<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">Erro ao carregar conversas</p></div>'; });
 }
 
 function refreshChat(target){
-	loadChatConversations(target);
-	var c=CHATS[target];
-	if(c&&c.active){ loadChatMessages(target,c.active); }
+  loadChatConversations(target);
+  var c=CHATS[target];
+  if(c&&c.active){ loadChatMessages(target,c.active); }
 }
 
 function openChat(target,id,title){
-	var c=CHATS[target]; if(!c) return;
-	c.active=id;
-	$('chat-title-'+target).textContent=title||('Conversa #'+id);
-	loadChatConversations(target);
-	loadChatMessages(target,id);
+  var c=CHATS[target]; if(!c) return;
+  c.active=id;
+  $('chat-title-'+target).textContent=title||('Conversa #'+id);
+  loadChatConversations(target);
+  loadChatMessages(target,id);
 }
 
 function loadChatMessages(target,id){
-	var c=CHATS[target]; if(!c) return;
-	fetch('/api/'+c.messages+'?'+encodeURIComponent(c.relation)+'='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(items){
-		var box=$('chat-msg-'+target); if(!box) return;
-		box.innerHTML='';
-		if(!items||!items.length){ box.innerHTML='<div class="empty-state"><p>Sem mensagens</p></div>'; return; }
-		items.forEach(function(item){
-			var mine=!!item[c.authorField];
-			var text=item[c.textField]||'';
-			var media=item[c.mediaField]||'';
-			var type=(item[c.typeField]||'').toLowerCase();
-			var div=document.createElement('div');
-			div.className='chat-bubble '+(mine?'mine':'other');
-			var html='';
-			if(text) html+='<div>'+esc(text)+'</div>';
-			if(media){ html+='<div class="chat-media">'+chatMediaHTML(media,type)+'</div>'; }
-			html+='<div class="chat-bubble-meta">'+esc(item[c.timeField]||'')+'</div>';
-			div.innerHTML=html;
-			box.appendChild(div);
-		});
-		box.scrollTop=box.scrollHeight;
-	});
+  var c=CHATS[target]; if(!c) return;
+  fetch('/api/'+c.messages+'?'+encodeURIComponent(c.relation)+'='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(items){
+    var box=$('chat-msg-'+target); if(!box) return;
+    box.innerHTML='';
+    if(!items||!items.length){ box.innerHTML='<div class="flex flex-col items-center justify-center py-12 text-gray-400"><p class="text-sm">Sem mensagens</p></div>'; return; }
+    items.forEach(function(item){
+      var mine=!!item[c.authorField];
+      var text=item[c.textField]||'';
+      var media=item[c.mediaField]||'';
+      var type=(item[c.typeField]||'').toLowerCase();
+      var div=document.createElement('div');
+      div.className='chat-bubble '+(mine?'mine bg-primary/10 dark:bg-primary/20 border border-primary/20':'other bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700');
+      var html='';
+      if(text) html+='<div class="text-sm">'+esc(text)+'</div>';
+      if(media){ html+='<div class="chat-media mt-2">'+chatMediaHTML(media,type)+'</div>'; }
+      html+='<div class="chat-bubble-meta text-gray-400">'+esc(item[c.timeField]||'')+'</div>';
+      div.innerHTML=html;
+      box.appendChild(div);
+    });
+    box.scrollTop=box.scrollHeight;
+  });
 }
 
 function chatMediaHTML(path,type){
-	var src='/media/stream?path='+encodeURIComponent(path);
-	if((type||'').indexOf('audio')>=0||String(path).match(/\.(mp3|wav|ogg|m4a|aac)$/i)) return '<audio controls src="'+src+'"></audio>';
-	if((type||'').indexOf('video')>=0||String(path).match(/\.(mp4|webm|mov|avi)$/i)) return '<video controls src="'+src+'"></video>';
-	if(String(path).match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) return '<img src="'+esc(path)+'" alt="midia">';
-	return '<a class="link" target="_blank" href="'+esc(path)+'">Abrir arquivo</a>';
+  var src='/media/stream?path='+encodeURIComponent(path);
+  if((type||'').indexOf('audio')>=0||String(path).match(/\.(mp3|wav|ogg|m4a|aac)$/i)) return '<audio controls src="'+src+'"></audio>';
+  if((type||'').indexOf('video')>=0||String(path).match(/\.(mp4|webm|mov|avi)$/i)) return '<video controls src="'+src+'"></video>';
+  if(String(path).match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) return '<img src="'+esc(path)+'" alt="midia">';
+  return '<a class="text-primary hover:underline" target="_blank" href="'+esc(path)+'">Abrir arquivo</a>';
 }
 
 function chatSend(target,e){
-	e.preventDefault();
-	var c=CHATS[target]; if(!c||!c.active) return;
-	var input=$('chat-input-'+target); var text=input.value.trim();
-	var payload={};
-	payload[c.relation]=c.active;
-	payload[c.textField]=text;
-	payload[c.authorField]=true;
-	payload[c.typeField]='chat';
-	fetch('/api/'+c.messages,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-		.then(function(r){if(!r.ok) throw new Error('Erro ao enviar'); return r.json();})
-		.then(function(){ input.value=''; chatTyping(target,false); loadChatMessages(target,c.active); loadChatConversations(target); })
-		.catch(function(err){ toast(err.message,'erro'); });
+  e.preventDefault();
+  var c=CHATS[target]; if(!c||!c.active) return;
+  var input=$('chat-input-'+target); var text=input.value.trim();
+  var payload={};
+  payload[c.relation]=c.active;
+  payload[c.textField]=text;
+  payload[c.authorField]=true;
+  payload[c.typeField]='chat';
+  fetch('/api/'+c.messages,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(r){if(!r.ok) throw new Error('Erro ao enviar'); return r.json();})
+    .then(function(){ input.value=''; chatTyping(target,false); loadChatMessages(target,c.active); loadChatConversations(target); })
+    .catch(function(err){ toast(err.message,'erro'); });
 }
 
 function chatUpload(target,input){
-	var c=CHATS[target]; if(!c||!c.active||!input.files||!input.files[0]) return;
-	var fd=new FormData(); fd.append('file', input.files[0]);
-	fetch('/upload',{method:'POST',body:fd}).then(function(r){if(!r.ok) throw new Error('Upload falhou'); return r.json();}).then(function(d){
-		var payload={};
-		payload[c.relation]=c.active;
-		payload[c.textField]=input.files[0].name;
-		payload[c.mediaField]=d.path;
-		payload[c.authorField]=true;
-		payload[c.typeField]=input.files[0].type||'arquivo';
-		return fetch('/api/'+c.messages,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-	}).then(function(){ input.value=''; loadChatMessages(target,c.active); loadChatConversations(target); }).catch(function(err){ toast(err.message,'erro'); });
+  var c=CHATS[target]; if(!c||!c.active||!input.files||!input.files[0]) return;
+  var fd=new FormData(); fd.append('file', input.files[0]);
+  fetch('/upload',{method:'POST',body:fd}).then(function(r){if(!r.ok) throw new Error('Upload falhou'); return r.json();}).then(function(d){
+    var payload={};
+    payload[c.relation]=c.active;
+    payload[c.textField]=input.files[0].name;
+    payload[c.mediaField]=d.path;
+    payload[c.authorField]=true;
+    payload[c.typeField]=input.files[0].type||'arquivo';
+    return fetch('/api/'+c.messages,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }).then(function(){ input.value=''; loadChatMessages(target,c.active); loadChatConversations(target); }).catch(function(err){ toast(err.message,'erro'); });
 }
 
 function chatFilter(target,q){
-	q=(q||'').toLowerCase();
-	document.querySelectorAll('#chat-conv-'+target+' .chat-conv').forEach(function(el){
-		el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';
-	});
+  q=(q||'').toLowerCase();
+  document.querySelectorAll('#chat-conv-'+target+' .chat-conv').forEach(function(el){
+    el.style.display=el.textContent.toLowerCase().includes(q)?'':'none';
+  });
 }
 
 function chatTyping(target,typing){
-	var c=CHATS[target]; if(!c||!c.active) return;
-	fetch('/api/_presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:'local',screen:target,ticket_id:c.active,typing:typing,status:typing?'digitando':'online'})}).catch(function(){});
+  var c=CHATS[target]; if(!c||!c.active) return;
+  fetch('/api/_presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:'local',screen:target,ticket_id:c.active,typing:typing,status:typing?'digitando':'online'})}).catch(function(){});
 }
 
 function chatHandlePresence(msg){
-	var data=msg.data||{};
-	var ticketId=String(data.ticket_id||'');
-	Object.keys(CHATS).forEach(function(target){
-		var c=CHATS[target];
-		if(!c||String(c.active)!==ticketId) return;
-		if(msg.type==='digitando'){
-			$('chat-typing-'+target).textContent=(data.user||'Alguem')+' está digitando...';
-			setTimeout(function(){ if($('chat-typing-'+target).textContent.indexOf('digitando')>=0) $('chat-typing-'+target).textContent=''; }, 1800);
-		}else if(msg.type==='presenca'){
-			$('chat-presence-'+target).textContent=(data.user||'')+' '+(data.status||'');
-		}else if(msg.type==='presenca_socket'){
-			$('chat-presence-'+target).textContent='Conexões ativas: '+((data&&data.connections)||0);
-		}
-	});
+  var data=msg.data||{};
+  var ticketId=String(data.ticket_id||'');
+  Object.keys(CHATS).forEach(function(target){
+    var c=CHATS[target];
+    if(!c||String(c.active)!==ticketId) return;
+    if(msg.type==='digitando'){
+      $('chat-typing-'+target).textContent=(data.user||'Alguem')+' esta digitando...';
+      setTimeout(function(){ if($('chat-typing-'+target).textContent.indexOf('digitando')>=0) $('chat-typing-'+target).textContent=''; }, 1800);
+    }else if(msg.type==='presenca'){
+      $('chat-presence-'+target).textContent=(data.user||'')+' '+(data.status||'');
+    }else if(msg.type==='presenca_socket'){
+      $('chat-presence-'+target).textContent='Conexoes ativas: '+((data&&data.connections)||0);
+    }
+  });
 }
 
 function chatHandleUpdate(msg){
-	Object.keys(CHATS).forEach(function(target){
-		var c=CHATS[target];
-		if(!c) return;
-		if(msg.model===c.target){ loadChatConversations(target); }
-		if(msg.model===c.messages&&c.active){ loadChatMessages(target,c.active); }
-	});
+  Object.keys(CHATS).forEach(function(target){
+    var c=CHATS[target];
+    if(!c) return;
+    if(msg.model===c.target){ loadChatConversations(target); }
+    if(msg.model===c.messages&&c.active){ loadChatMessages(target,c.active); }
+  });
 }
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded',function(){
   connectWS();
   renderCharts();
-	initChats();
-	carregarListasInline();
-	refreshSystemStatus();
-	setInterval(refreshSystemStatus,8000);
+  initChats();
+  carregarListasInline();
+  refreshSystemStatus();
+  setInterval(refreshSystemStatus,8000);
 `)
 	for _, model := range s.Program.Models {
 		b.WriteString(fmt.Sprintf("  carregar('%s');\n", lo(model.Name)))
@@ -1766,22 +1473,28 @@ window.fetch=function(url,opts){
 };
 
 function mostrarLogin(){
-  $('auth-modal').style.display='flex';
+  var modal=$('auth-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
   authMode='login';
   $('auth-title').textContent='Entrar';
   $('auth-toggle-text').textContent='Nao tem conta?';
   $('auth-toggle-link').textContent='Criar conta';
-  $('auth-error').style.display='none';
+  $('auth-error').classList.add('hidden');
   $('auth-extra-fields').innerHTML='';
 }
-function fecharAuth(){$('auth-modal').style.display='none';}
+function fecharAuth(){
+  var modal=$('auth-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
 function toggleAuthMode(){
   if(authMode==='login'){
     authMode='register';
     $('auth-title').textContent='Criar Conta';
     $('auth-toggle-text').textContent='Ja tem conta?';
     $('auth-toggle-link').textContent='Entrar';
-    $('auth-extra-fields').innerHTML='<div class="form-group"><label>Nome</label><input type="text" id="auth-nome" required class="form-input" placeholder="Seu nome"></div>';
+    $('auth-extra-fields').innerHTML='<div class="mb-4"><label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1.5">Nome</label><input type="text" id="auth-nome" required class="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="Seu nome"></div>';
   } else {
     authMode='login';
     $('auth-title').textContent='Entrar';
@@ -1789,7 +1502,7 @@ function toggleAuthMode(){
     $('auth-toggle-link').textContent='Criar conta';
     $('auth-extra-fields').innerHTML='';
   }
-  $('auth-error').style.display='none';
+  $('auth-error').classList.add('hidden');
 }
 function authSubmit(e){
   e.preventDefault();
@@ -1808,7 +1521,7 @@ function authSubmit(e){
     .then(function(res){
       if(!res.ok){
         $('auth-error').textContent=res.data.erro||'Erro';
-        $('auth-error').style.display='block';
+        $('auth-error').classList.remove('hidden');
         return;
       }
       authToken=res.data.token;
@@ -1826,15 +1539,16 @@ function sair(){
   authToken='';
   localStorage.removeItem('flang_token');
   $('btn-login').style.display='';
-  $('user-info').style.display='none';
-  $('btn-logout').style.display='none';
+  $('btn-login').classList.remove('hidden');
+  $('user-info').classList.add('hidden');
+  $('btn-logout').classList.add('hidden');
   toast('Desconectado');
 }
 function updateAuthUI(login,role){
-  $('btn-login').style.display='none';
-  $('user-info').style.display='inline';
+  $('btn-login').classList.add('hidden');
+  $('user-info').classList.remove('hidden');
   $('user-info').textContent=login+' ('+role+')';
-  $('btn-logout').style.display='inline';
+  $('btn-logout').classList.remove('hidden');
 }
 // Check stored token on load
 if(authToken){
