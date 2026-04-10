@@ -1,0 +1,5 @@
+logica
+
+  definir nome = "Flang"
+
+  mostrar "Olá " + nome

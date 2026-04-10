@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Flang-v0.4-6366f1?style=for-the-badge" alt="Flang v0.4">
+  <img src="https://img.shields.io/badge/Extension-.fg-6366f1?style=for-the-badge" alt="Flang .fg">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.21+">
   <img src="https://img.shields.io/badge/Bilingue-PT%20%7C%20EN-f59e0b?style=for-the-badge" alt="Bilingual">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
@@ -17,6 +17,8 @@
 <p align="center">
   <a href="#instalacao">Instalacao</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#hello-world">Hello World</a> ·
+  <a href="#estrutura-do-repositorio">Repositorio</a> ·
   <a href="docs/TUTORIAL.md">Tutorial</a> ·
   <a href="docs/SPEC.md">Especificacao</a> ·
   <a href="docs/API.md">API</a> ·
@@ -28,7 +30,7 @@
 
 ## O que e o Flang?
 
-**Flang** e uma linguagem de programacao **completa, bilingue e declarativa** que gera aplicacoes full-stack a partir de arquivos `.fg`. Escreva o que sua aplicacao faz — Flang cuida do resto.
+**Flang** e uma linguagem de programacao **completa, bilingue e declarativa** que gera aplicacoes full-stack a partir de arquivos `.fg`. A extensao oficial da linguagem e **`.fg`**, e este repositorio contem compilador, runtime, documentacao, extensao de editor e programas de exemplo.
 
 ```
 sistema loja
@@ -65,6 +67,22 @@ logica
 flang run inicio.fg
 # App completa rodando em http://localhost:8080
 ```
+
+---
+
+## Hello World
+
+Exemplo minimo de sintaxe em Flang:
+
+```fg
+logica
+
+definir nome = "Flang"
+
+mostrar "Olá " + nome
+```
+
+Arquivo sugerido: [examples/hello-world.fg](examples/hello-world.fg)
 
 ---
 
@@ -177,7 +195,31 @@ http://localhost:8080
 
 ---
 
+## Estrutura do Repositorio
+
+Este repositorio foi organizado para parecer e funcionar como um projeto real de linguagem de programacao:
+
+| Caminho | Papel |
+|---------|-------|
+| `compiler/` | Lexer, parser e AST da linguagem |
+| `runtime/` | Interpretador, servidor HTTP, banco, auth e integracoes |
+| `examples/` | Programas de exemplo em `.fg` |
+| `demo/` | Aplicacoes maiores para validar o runtime |
+| `docs/` | Especificacao, tutorial, API e referencia |
+| `vscode-flang/` | Syntax highlighting e suporte de editor |
+| `.gitattributes` | Associa `*.fg` a linguagem Flang no GitHub |
+
+Os exemplos iniciais incluidos neste repositorio sao:
+
+- [examples/hello-world.fg](examples/hello-world.fg)
+- [examples/cadastro-simples.fg](examples/cadastro-simples.fg)
+- [examples/english-mode.fg](examples/english-mode.fg)
+
+---
+
 ## Exemplos
+
+Para exemplos pequenos e diretos, comece pela pasta [examples/](examples/). Para aplicacoes mais completas, veja [demo/](demo/) e [docs/EXAMPLES.md](docs/EXAMPLES.md).
 
 ### Portugues
 
@@ -450,7 +492,8 @@ flang/
 ├── installer/               # Windows .exe + Linux .sh
 ├── vscode-flang/            # VS Code extension
 ├── docs/                    # Documentacao completa
-└── exemplos/                # Exemplos prontos
+├── examples/                # Programas pequenos e introdutorios
+└── demo/                    # Aplicacoes maiores e modulares
 ```
 
 ---
@@ -509,8 +552,8 @@ flang/
 ```bash
 git clone https://github.com/flaviokalleu/flang.git
 cd flang
-go build -o flang .
-./flang run exemplos/loja-completa/inicio.fg
+CGO_ENABLED=0 go build -o flang .
+./flang run examples/cadastro-simples.fg
 ```
 
 1. Fork
