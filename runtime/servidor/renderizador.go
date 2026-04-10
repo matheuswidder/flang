@@ -58,6 +58,11 @@ func (s *Servidor) renderHTML() string {
 
 	b.WriteString(`</div></div>`) // content, main
 
+	// Modal forms - rendered OUTSIDE content/main so they're never hidden by display:none parents
+	for _, model := range s.Program.Models {
+		s.renderModelModal(&b, model)
+	}
+
 	// Toast container
 	b.WriteString(`<div id="toast" class="toast"></div>`)
 
@@ -547,7 +552,14 @@ func (s *Servidor) renderModelSection(b *strings.Builder, model *ast.Model, them
 	b.WriteString(fmt.Sprintf(`<div id="vazio-%s" class="empty-state">`, name))
 	b.WriteString(svgIcon("inbox") + `<p>Nenhum registro</p></div></div>`)
 
-	// Modal form
+	b.WriteString(`</div>`) // section
+}
+
+// renderModelModal generates the modal form for a model, rendered at body level (not inside any section).
+func (s *Servidor) renderModelModal(b *strings.Builder, model *ast.Model) {
+	name := lo(model.Name)
+	capName := cap(model.Name)
+
 	b.WriteString(fmt.Sprintf(`<div id="modal-%s" class="modal-wrap" onclick="if(event.target===this)fecharForm('%s')">`, name, name))
 	b.WriteString(`<div class="modal anim-modal">`)
 	b.WriteString(fmt.Sprintf(`<div class="modal-top"><h2 id="titulo-form-%s">Novo %s</h2>`, name, capName))
@@ -562,7 +574,6 @@ func (s *Servidor) renderModelSection(b *strings.Builder, model *ast.Model, them
 	b.WriteString(`<button type="submit" class="btn btn-glow">` + svgIcon("check") + `<span>Salvar</span></button>`)
 	b.WriteString(fmt.Sprintf(`<button type="button" class="btn btn-ghost" onclick="fecharForm('%s')">Cancelar</button>`, name))
 	b.WriteString(`</div></form></div></div>`)
-	b.WriteString(`</div>`) // section
 }
 
 // renderFormField generates the correct form input element based on field type.
@@ -935,8 +946,8 @@ body.dark .pill-blue{background:rgba(59,130,246,.15);color:#93c5fd}
   -webkit-backdrop-filter:blur(6px);z-index:9000;align-items:center;justify-content:center;padding:20px}
 .modal-wrap.show{display:flex}
 .modal{width:100%;max-width:500px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow3);
-  background:var(--card-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border:1px solid var(--border);border-radius:var(--radius)}
+  background:var(--card-solid,#1e1b4b);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:var(--radius);color:var(--text)}
 .anim-modal{animation:modalIn .3s var(--ease)}
 @keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .modal-top{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
