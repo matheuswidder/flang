@@ -264,8 +264,8 @@ func (a *Auth) CheckRole(r *http.Request, required string) bool {
 	if role == "" {
 		return false
 	}
-	if role == "admin" {
-		return true // admin has access to everything
+	if role == "admin" || role == "superadmin" {
+		return true // admin/superadmin has access to everything
 	}
 	return role == required
 }

@@ -14,3 +14,4 @@ dados
     reaberturas: numero
     transferencias: numero
     status: enum(pendente, aberto, aguardando, resolvido, fechado)
+    tem_muitos mensagem

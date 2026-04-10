@@ -9,6 +9,7 @@ dados
     publicado: booleano
     execucoes: numero
     status: enum(ativo, inativo, rascunho)
+    tem_muitos execucao_fluxo
 
   execucao_fluxo
     fluxo: texto pertence_a fluxo

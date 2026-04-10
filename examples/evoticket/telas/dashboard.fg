@@ -4,4 +4,8 @@ telas
     titulo "Dashboard"
     dashboard
     grafico ticket tipo barra
-    grafico negocio tipo pizza
+    grafico ticket tipo pizza
+    grafico negocio tipo barra
+    grafico financeiro tipo pizza
+    grafico contato tipo barra
+    grafico campanha tipo pizza

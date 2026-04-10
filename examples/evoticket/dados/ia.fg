@@ -10,6 +10,7 @@ dados
     max_tokens: numero
     empresa: texto pertence_a empresa
     status: enum(ativo, inativo)
+    tem_muitos base_conhecimento
 
   base_conhecimento
     agente: texto pertence_a agente_ia

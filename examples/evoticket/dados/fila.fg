@@ -7,3 +7,4 @@ dados
     sla_primeira_resposta: numero
     sla_resolucao: numero
     status: enum(ativo, inativo)
+    tem_muitos ticket

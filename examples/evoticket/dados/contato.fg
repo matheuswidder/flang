@@ -12,4 +12,5 @@ dados
     cidade: texto
     estado: texto
     bloqueado: booleano
-    status: enum(ativo, inativo)
+    situacao: enum(ativo, inativo)
+    tem_muitos ticket

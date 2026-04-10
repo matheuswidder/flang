@@ -605,6 +605,39 @@ func (s *Servidor) renderModelSection(b *strings.Builder, model *ast.Model, them
 	b.WriteString(fmt.Sprintf(`<button class="bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2" onclick="abrirForm('%s')"><span class="w-4 h-4 inline-flex">%s</span><span>Novo %s</span></button>`, name, svgIcon("plus"), html.EscapeString(capName)))
 	b.WriteString(`</div></div>`)
 
+	// Status/Enum tabs for filtering
+	hasStatusTabs := false
+	var tabField string
+	var tabValues []string
+	for _, f := range model.Fields {
+		if f.Type == ast.FieldStatus {
+			hasStatusTabs = true
+			tabField = lo(f.Name)
+			tabValues = []string{"todos", "ativo", "inativo", "pendente", "concluido"}
+			break
+		}
+		if f.Type == ast.FieldEnum && len(f.EnumValues) > 0 {
+			hasStatusTabs = true
+			tabField = lo(f.Name)
+			tabValues = append([]string{"todos"}, f.EnumValues...)
+			break
+		}
+	}
+	if hasStatusTabs {
+		b.WriteString(fmt.Sprintf(`<div class="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-xl p-1" data-tabs="%s" data-tab-field="%s">`, name, tabField))
+		for i, val := range tabValues {
+			active := ""
+			if i == 0 {
+				active = " bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white"
+			} else {
+				active = " text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+			}
+			b.WriteString(fmt.Sprintf(`<button class="px-4 py-2 rounded-lg text-sm font-medium transition-all%s" onclick="filtrarTab('%s','%s','%s',this)">%s</button>`,
+				active, name, tabField, val, html.EscapeString(cap(val))))
+		}
+		b.WriteString(`</div>`)
+	}
+
 	// Table
 	b.WriteString(`<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">`)
 	b.WriteString(`<div class="overflow-x-auto">`)
@@ -903,6 +936,25 @@ function fecharForm(m){
   var modal=$('modal-'+m);
   modal.classList.add('hidden');
   modal.classList.remove('flex');
+}
+
+// ===== Tab Filter =====
+function filtrarTab(model,field,value,btn){
+  var container=btn.parentElement;
+  container.querySelectorAll('button').forEach(function(b){
+    b.className=b.className.replace(/bg-white|dark:bg-gray-700|shadow-sm|text-gray-900|dark:text-white/g,'');
+    if(b.className.indexOf('text-gray-500')<0){
+      b.className+=' text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300';
+    }
+  });
+  btn.className=btn.className.replace(/text-gray-500|dark:text-gray-400|hover:text-gray-700|dark:hover:text-gray-300/g,'');
+  btn.className+=' bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white';
+  var rows=document.querySelectorAll('#tabela-'+model+' tr');
+  rows.forEach(function(row){
+    if(value==='todos'){row.style.display='';return;}
+    var text=row.textContent.toLowerCase();
+    row.style.display=text.indexOf(value.toLowerCase())>=0?'':'none';
+  });
 }
 
 // ===== Search / Filter =====

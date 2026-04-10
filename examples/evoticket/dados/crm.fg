@@ -4,12 +4,14 @@ dados
     nome: texto obrigatorio
     empresa: texto pertence_a empresa
     status: enum(ativo, inativo)
+    tem_muitos estagio
 
   estagio
     nome: texto obrigatorio
     cor: texto
     ordem: numero
     pipeline: texto pertence_a pipeline
+    tem_muitos negocio
 
   negocio
     titulo: texto obrigatorio

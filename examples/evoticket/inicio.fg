@@ -43,6 +43,9 @@ importar "telas/kanban.fg"
 importar "telas/configuracoes.fg"
 
 importar "eventos/acoes.fg"
+importar "logica.fg"
+importar "integracoes.fg"
+importar "rotas.fg"
 
 sidebar
   item "Dashboard" icone "layout" link dashboard
