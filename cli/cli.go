@@ -141,15 +141,16 @@ Exemplo:
 }
 
 func cmdNew(name string) {
-	title := strings.ToUpper(name[:1]) + name[1:]
 	dir := name
+	baseName := filepath.Base(name)
+	title := strings.ToUpper(baseName[:1]) + baseName[1:]
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		fmt.Printf("Erro: %s\n", err)
 		os.Exit(1)
 	}
 
 	// Modo plano: tudo num arquivo só, simples e direto
-	fg := `sistema ` + name + `
+	fg := `sistema ` + baseName + `
 
 tema
   cor primaria "#6366f1"
@@ -255,8 +256,9 @@ CMD ["flang", "run", "%s"]
 }
 
 func cmdInit(name string) {
-	title := strings.ToUpper(name[:1]) + name[1:]
 	dir := name
+	baseName := filepath.Base(name)
+	title := strings.ToUpper(baseName[:1]) + baseName[1:]
 
 	// Criar estrutura organizada por responsabilidade
 	// Inspirado no React: cada pasta tem um papel claro
@@ -274,7 +276,7 @@ func cmdInit(name string) {
 	}
 
 	// ── inicio.fg ── entry point (como App.js no React)
-	inicio := `sistema ` + name + `
+	inicio := `sistema ` + baseName + `
 
 importar "tema.fg"
 importar "dados/produto.fg"
@@ -371,10 +373,10 @@ importar "eventos/acoes.fg"
 	}
 
 	// ── .env
-	envContent := `# Configuracao do projeto ` + name + `
+	envContent := `# Configuracao do projeto ` + baseName + `
 FLANG_PORT=8080
 FLANG_DB_TYPE=sqlite
-FLANG_DB_NAME=` + name + `.db
+FLANG_DB_NAME=` + baseName + `.db
 `
 	envPath := filepath.Join(dir, ".env")
 	if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
