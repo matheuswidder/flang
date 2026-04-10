@@ -1,0 +1,15 @@
+telas
+
+  tela tickets
+    titulo "Tickets"
+    busca ticket
+    lista ticket
+      mostrar protocolo
+      mostrar contato
+      mostrar atendente
+      mostrar fila
+      mostrar prioridade
+      mostrar canal
+      mostrar status
+    botao azul
+      texto "Novo Ticket"

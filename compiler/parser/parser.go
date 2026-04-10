@@ -157,7 +157,11 @@ func (p *Parser) skipToNextLine() {
 }
 
 func (p *Parser) isBlockKeyword() bool {
-	return lexer.IsBlockKeyword(p.current().Type)
+	tt := p.current().Type
+	if tt == lexer.TokenImportar {
+		return true // imports break blocks
+	}
+	return lexer.IsBlockKeyword(tt)
 }
 
 // parseSistema parses: sistema <name>

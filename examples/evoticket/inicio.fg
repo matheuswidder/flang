@@ -1,0 +1,63 @@
+sistema evoticket
+
+tema moderno escuro
+
+autenticacao
+  modelo: usuario
+  campo_login: email
+  campo_senha: senha
+  roles: superadmin, admin, gerente, atendente
+
+importar "dados/empresa.fg"
+importar "dados/usuario.fg"
+importar "dados/contato.fg"
+importar "dados/fila.fg"
+importar "dados/tag.fg"
+importar "dados/ticket.fg"
+importar "dados/mensagem.fg"
+importar "dados/resposta_rapida.fg"
+importar "dados/conexao.fg"
+importar "dados/campanha.fg"
+importar "dados/fluxo.fg"
+importar "dados/ia.fg"
+importar "dados/crm.fg"
+importar "dados/financeiro.fg"
+importar "dados/webhook.fg"
+importar "dados/kanban.fg"
+
+importar "telas/dashboard.fg"
+importar "telas/tickets.fg"
+importar "telas/contatos.fg"
+importar "telas/atendentes.fg"
+importar "telas/filas.fg"
+importar "telas/tags.fg"
+importar "telas/conexoes.fg"
+importar "telas/campanhas.fg"
+importar "telas/respostas_rapidas.fg"
+importar "telas/fluxos.fg"
+importar "telas/agentes_ia.fg"
+importar "telas/crm.fg"
+importar "telas/financeiro.fg"
+importar "telas/webhooks.fg"
+importar "telas/kanban.fg"
+importar "telas/configuracoes.fg"
+
+importar "eventos/acoes.fg"
+
+sidebar
+  item "Dashboard" icone "layout" link dashboard
+  item "Tickets" icone "clip" link screen-tickets
+  item "Contatos" icone "users" link screen-contatos
+  item "Campanhas" icone "activity" link screen-campanhas
+  item "Fluxos" icone "zap" link screen-fluxos
+  item "Agentes IA" icone "settings" link screen-agentes_ia
+  item "CRM" icone "dollar" link screen-crm
+  item "Kanban" icone "grid" link screen-kanban
+  item "Financeiro" icone "dollar" link screen-financeiro
+  item "Respostas" icone "list" link screen-respostas_rapidas
+  item "Conexoes" icone "zap" link screen-conexoes
+  item "Filas" icone "list" link screen-filas
+  item "Tags" icone "tag" link screen-tags
+  item "Atendentes" icone "users" link screen-atendentes
+  item "Webhooks" icone "activity" link screen-webhooks
+  item "Config" icone "settings" link screen-configuracoes

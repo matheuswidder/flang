@@ -1,0 +1,7 @@
+telas
+
+  tela dashboard
+    titulo "Dashboard"
+    dashboard
+    grafico ticket tipo barra
+    grafico negocio tipo pizza
