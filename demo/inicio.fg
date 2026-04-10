@@ -1,0 +1,115 @@
+sistema demo
+
+tema
+  cor primaria "#6366f1"
+  cor secundaria "#8b5cf6"
+  cor destaque "#f59e0b"
+
+autenticacao
+  modelo: usuario
+  campo_login: email
+  campo_senha: senha
+  roles: admin, usuario
+
+dados
+
+  usuario
+    nome: texto obrigatorio
+    email: email obrigatorio unico
+    senha: senha obrigatorio
+    cargo: texto
+    status: status
+
+  projeto
+    nome: texto obrigatorio
+    descricao: texto_longo
+    cliente: texto
+    valor: dinheiro
+    prazo: data
+    responsavel: texto
+    status: status
+
+  tarefa
+    titulo: texto obrigatorio
+    projeto: texto
+    prioridade: status
+    responsavel: texto
+    status: status
+
+  cliente
+    nome: texto obrigatorio
+    empresa: texto
+    email: email unico
+    telefone: telefone
+    status: status
+
+telas
+
+  tela projetos
+    titulo "Projetos"
+    lista projeto
+      mostrar nome
+      mostrar cliente
+      mostrar valor
+      mostrar prazo
+      mostrar status
+    botao azul
+      texto "Novo Projeto"
+
+  tela tarefas
+    titulo "Tarefas"
+    lista tarefa
+      mostrar titulo
+      mostrar projeto
+      mostrar prioridade
+      mostrar responsavel
+      mostrar status
+    botao verde
+      texto "Nova Tarefa"
+
+  tela clientes
+    titulo "Clientes"
+    lista cliente
+      mostrar nome
+      mostrar empresa
+      mostrar email
+      mostrar telefone
+      mostrar status
+    botao azul
+      texto "Novo Cliente"
+
+  tela equipe
+    titulo "Equipe"
+    lista usuario
+      mostrar nome
+      mostrar email
+      mostrar cargo
+      mostrar status
+    botao azul
+      texto "Novo Membro"
+
+eventos
+
+  quando clicar "Novo Projeto"
+    criar projeto
+
+  quando clicar "Nova Tarefa"
+    criar tarefa
+
+  quando clicar "Novo Cliente"
+    criar cliente
+
+  quando clicar "Novo Membro"
+    criar usuario
+
+logica
+
+  definir versao = "1.0.0"
+
+  funcao calcular_margem(valor, custo)
+    retornar ((valor - custo) / valor) * 100
+
+  se projeto.valor maior 50000
+    mostrar "Projeto de grande porte"
+
+  mostrar "Sistema Demo Flang v" + versao
