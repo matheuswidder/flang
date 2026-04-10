@@ -1,15 +1,24 @@
 {
   "name": "flang",
   "displayName": "Flang Language",
-  "description": "Syntax highlighting for the Flang declarative language (.fg files)",
-  "version": "0.2.0",
+  "description": "Syntax highlighting, snippets and language support for Flang (.fg files)",
+  "version": "0.4.0",
   "publisher": "flang",
   "engines": {
     "vscode": "^1.75.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
   ],
+  "keywords": [
+    "flang",
+    "fg",
+    "declarative",
+    "fullstack",
+    "bilingual"
+  ],
+  "icon": "icon.png",
   "contributes": {
     "languages": [
       {
@@ -21,7 +30,11 @@
         "extensions": [
           ".fg"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icon.png",
+          "dark": "./icon.png"
+        }
       }
     ],
     "grammars": [
@@ -29,6 +42,12 @@
         "language": "flang",
         "scopeName": "source.flang",
         "path": "./syntaxes/flang.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "flang",
+        "path": "./snippets/flang.json"
       }
     ]
   },

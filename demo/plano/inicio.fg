@@ -1,4 +1,4 @@
-sistema demo
+sistema loja
 
 tema
   cor primaria "#6366f1"
@@ -9,7 +9,7 @@ autenticacao
   modelo: usuario
   campo_login: email
   campo_senha: senha
-  roles: admin, usuario
+  roles: admin, vendedor
 
 dados
 
@@ -20,63 +20,64 @@ dados
     cargo: texto
     status: status
 
-  projeto
+  produto
     nome: texto obrigatorio
-    descricao: texto_longo
-    cliente: texto
-    valor: dinheiro
-    prazo: data
-    responsavel: texto
-    status: status
-
-  tarefa
-    titulo: texto obrigatorio
-    projeto: texto
-    prioridade: status
-    responsavel: texto
+    descricao: texto
+    preco: dinheiro
+    estoque: numero
+    categoria: texto
     status: status
 
   cliente
     nome: texto obrigatorio
-    empresa: texto
     email: email unico
     telefone: telefone
+    cidade: texto
+    status: status
+
+  venda
+    cliente: texto obrigatorio
+    produto: texto obrigatorio
+    quantidade: numero
+    valor: dinheiro
+    data: data
     status: status
 
 telas
 
-  tela projetos
-    titulo "Projetos"
-    lista projeto
+  tela produtos
+    titulo "Produtos"
+    lista produto
       mostrar nome
-      mostrar cliente
-      mostrar valor
-      mostrar prazo
+      mostrar preco
+      mostrar estoque
+      mostrar categoria
       mostrar status
     botao azul
-      texto "Novo Projeto"
-
-  tela tarefas
-    titulo "Tarefas"
-    lista tarefa
-      mostrar titulo
-      mostrar projeto
-      mostrar prioridade
-      mostrar responsavel
-      mostrar status
-    botao verde
-      texto "Nova Tarefa"
+      texto "Novo Produto"
 
   tela clientes
     titulo "Clientes"
     lista cliente
       mostrar nome
-      mostrar empresa
       mostrar email
       mostrar telefone
+      mostrar cidade
+      mostrar status
+    botao verde
+      texto "Novo Cliente"
+
+  tela vendas
+    titulo "Vendas"
+    lista venda
+      mostrar cliente
+      mostrar produto
+      mostrar quantidade
+      mostrar valor
+      mostrar data
       mostrar status
     botao azul
-      texto "Novo Cliente"
+      texto "Nova Venda"
 
   tela equipe
     titulo "Equipe"
@@ -90,14 +91,14 @@ telas
 
 eventos
 
-  quando clicar "Novo Projeto"
-    criar projeto
-
-  quando clicar "Nova Tarefa"
-    criar tarefa
+  quando clicar "Novo Produto"
+    criar produto
 
   quando clicar "Novo Cliente"
     criar cliente
+
+  quando clicar "Nova Venda"
+    criar venda
 
   quando clicar "Novo Membro"
     criar usuario
@@ -106,10 +107,7 @@ logica
 
   definir versao = "1.0.0"
 
-  funcao calcular_margem(valor, custo)
-    retornar ((valor - custo) / valor) * 100
+  funcao calcular_total(preco, quantidade)
+    retornar preco * quantidade
 
-  se projeto.valor maior 50000
-    mostrar "Projeto de grande porte"
-
-  mostrar "Sistema Demo Flang v" + versao
+  mostrar "Loja Flang v" + versao

@@ -101,58 +101,88 @@ func printUsage() {
 Uso: flang <comando> [argumentos]
 
 Comandos:
-  run <arquivo.fg> [porta]  Executa o arquivo .fg (porta padrão: 8080)
+  run <arquivo.fg> [porta]  Executa o arquivo .fg (porta padrao: 8080)
   check <arquivo.fg>        Verifica sintaxe sem executar
-  new <nome>                Cria um novo projeto .fg
-  init <nome>               Cria projeto com .env, .gitignore e Dockerfile
+  new <nome>                Cria projeto plano (tudo num arquivo so)
+  init <nome>               Cria projeto organizado (pastas por responsabilidade)
   docker                    Gera Dockerfile para o projeto atual
-  version                   Mostra a versão
+  version                   Mostra a versao
   help                      Mostra esta ajuda
+
+Modos de projeto:
+  new   → Modo plano: um arquivo so, ideal para comecar rapido.
+  init  → Modo organizado: dados/, telas/, eventos/ separados.
+          Comece com 'new' e migre para 'init' quando crescer.
 
 Atalho:
   flang inicio.fg           Mesmo que "flang run inicio.fg"
 
 Exemplo:
-  flang run inicio.fg
-  flang inicio.fg 3000
+  flang new meuapp          Cria projeto plano
+  flang init meuapp         Cria projeto organizado
+  flang run meuapp/inicio.fg
 `)
 }
 
 func cmdNew(name string) {
+	title := strings.ToUpper(name[:1]) + name[1:]
 	dir := name
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		fmt.Printf("Erro: %s\n", err)
 		os.Exit(1)
 	}
 
+	// Modo plano: tudo num arquivo só, simples e direto
 	fg := `sistema ` + name + `
+
+tema
+  cor primaria "#6366f1"
+  cor secundaria "#8b5cf6"
 
 dados
 
-  item
-    nome: texto
+  produto
+    nome: texto obrigatorio
     descricao: texto
-    preco: numero
+    preco: dinheiro
+    estoque: numero
+    status: status
+
+  cliente
+    nome: texto obrigatorio
+    email: email unico
+    telefone: telefone
+    status: status
 
 telas
 
-  tela itens
-
-    titulo "` + strings.ToUpper(name[:1]) + name[1:] + `"
-
-    lista itens
-
+  tela produtos
+    titulo "Produtos"
+    lista produto
       mostrar nome
-      mostrar descricao
       mostrar preco
-
+      mostrar estoque
+      mostrar status
     botao azul
-      texto "Novo"
+      texto "Novo Produto"
+
+  tela clientes
+    titulo "Clientes"
+    lista cliente
+      mostrar nome
+      mostrar email
+      mostrar telefone
+      mostrar status
+    botao verde
+      texto "Novo Cliente"
 
 eventos
 
-  quando clicar "Novo"
-    criar item
+  quando clicar "Novo Produto"
+    criar produto
+
+  quando clicar "Novo Cliente"
+    criar cliente
 `
 
 	fgPath := filepath.Join(dir, "inicio.fg")
@@ -161,8 +191,11 @@ eventos
 		os.Exit(1)
 	}
 
-	fmt.Printf("[flang] Projeto '%s' criado!\n", name)
+	fmt.Printf("[flang] Projeto '%s' criado! (modo plano)\n", title)
+	fmt.Println("[flang] Tudo num arquivo so - simples e direto.")
 	fmt.Printf("[flang] Execute: flang %s\n", fgPath)
+	fmt.Println()
+	fmt.Println("[flang] Dica: quando crescer, use 'flang init' para modo organizado.")
 }
 
 func cmdDocker() {
@@ -206,49 +239,122 @@ CMD ["flang", "run", "%s"]
 }
 
 func cmdInit(name string) {
+	title := strings.ToUpper(name[:1]) + name[1:]
 	dir := name
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		fmt.Printf("Erro: %s\n", err)
-		os.Exit(1)
+
+	// Criar estrutura organizada por responsabilidade
+	// Inspirado no React: cada pasta tem um papel claro
+	dirs := []string{
+		dir,
+		filepath.Join(dir, "dados"),  // modelos (como models/ ou types/)
+		filepath.Join(dir, "telas"),  // interfaces (como pages/ ou components/)
+		filepath.Join(dir, "eventos"), // interacoes (como handlers/ ou hooks/)
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d, 0755); err != nil {
+			fmt.Printf("Erro: %s\n", err)
+			os.Exit(1)
+		}
 	}
 
-	// Create .fg file
-	fg := `sistema ` + name + `
+	// ── inicio.fg ── entry point (como App.js no React)
+	inicio := `sistema ` + name + `
 
-dados
+importar "tema.fg"
+importar "dados/produto.fg"
+importar "dados/cliente.fg"
+importar "telas/produtos.fg"
+importar "telas/clientes.fg"
+importar "eventos/acoes.fg"
+`
+	// ── tema.fg ── visual (como theme.js)
+	tema := `tema
+  cor primaria "#6366f1"
+  cor secundaria "#8b5cf6"
+  cor destaque "#f59e0b"
+`
 
-  item
-    nome: texto
+	// ── dados/produto.fg ── um modelo por arquivo (como um component)
+	produto := `dados
+
+  produto
+    nome: texto obrigatorio
     descricao: texto
     preco: dinheiro
-
-telas
-
-  tela itens
-
-    titulo "` + strings.ToUpper(name[:1]) + name[1:] + `"
-
-    lista itens
-
-      mostrar nome
-      mostrar descricao
-      mostrar preco
-
-    botao azul
-      texto "Novo"
-
-eventos
-
-  quando clicar "Novo"
-    criar item
+    estoque: numero
+    categoria: texto
+    status: status
 `
-	fgPath := filepath.Join(dir, "inicio.fg")
-	if err := os.WriteFile(fgPath, []byte(fg), 0644); err != nil {
-		fmt.Printf("Erro: %s\n", err)
-		os.Exit(1)
+
+	// ── dados/cliente.fg
+	cliente := `dados
+
+  cliente
+    nome: texto obrigatorio
+    email: email unico
+    telefone: telefone
+    cidade: texto
+    status: status
+`
+
+	// ── telas/produtos.fg
+	telaProdutos := `telas
+
+  tela produtos
+    titulo "Produtos"
+    lista produto
+      mostrar nome
+      mostrar preco
+      mostrar estoque
+      mostrar categoria
+      mostrar status
+    botao azul
+      texto "Novo Produto"
+`
+
+	// ── telas/clientes.fg
+	telaClientes := `telas
+
+  tela clientes
+    titulo "Clientes"
+    lista cliente
+      mostrar nome
+      mostrar email
+      mostrar telefone
+      mostrar cidade
+      mostrar status
+    botao verde
+      texto "Novo Cliente"
+`
+
+	// ── eventos/acoes.fg
+	acoes := `eventos
+
+  quando clicar "Novo Produto"
+    criar produto
+
+  quando clicar "Novo Cliente"
+    criar cliente
+`
+
+	// Mapa de arquivos a criar
+	files := map[string]string{
+		filepath.Join(dir, "inicio.fg"):           inicio,
+		filepath.Join(dir, "tema.fg"):              tema,
+		filepath.Join(dir, "dados", "produto.fg"):  produto,
+		filepath.Join(dir, "dados", "cliente.fg"):  cliente,
+		filepath.Join(dir, "telas", "produtos.fg"): telaProdutos,
+		filepath.Join(dir, "telas", "clientes.fg"): telaClientes,
+		filepath.Join(dir, "eventos", "acoes.fg"):  acoes,
+	}
+	for path, content := range files {
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			fmt.Printf("Erro ao criar %s: %s\n", path, err)
+			os.Exit(1)
+		}
 	}
 
-	// Create .env
+	// ── .env
 	envContent := `# Configuracao do projeto ` + name + `
 FLANG_PORT=8080
 FLANG_DB_TYPE=sqlite
@@ -260,7 +366,7 @@ FLANG_DB_NAME=` + name + `.db
 		os.Exit(1)
 	}
 
-	// Create .gitignore
+	// ── .gitignore
 	gitignore := `*.db
 *.db-shm
 *.db-wal
@@ -274,8 +380,8 @@ flang.exe
 		os.Exit(1)
 	}
 
-	// Create Dockerfile
-	dockerfileContent := fmt.Sprintf(`FROM golang:1.26-alpine AS builder
+	// ── Dockerfile
+	dockerfileContent := `FROM golang:1.26-alpine AS builder
 
 WORKDIR /build
 COPY go.mod go.sum ./
@@ -288,21 +394,38 @@ RUN apk add --no-cache ca-certificates
 WORKDIR /app
 COPY --from=builder /build/flang /usr/local/bin/flang
 COPY *.fg ./
+COPY dados/ ./dados/
+COPY telas/ ./telas/
+COPY eventos/ ./eventos/
 
 EXPOSE 8080
 CMD ["flang", "run", "inicio.fg"]
-`)
+`
 	dfPath := filepath.Join(dir, "Dockerfile")
 	if err := os.WriteFile(dfPath, []byte(dockerfileContent), 0644); err != nil {
 		fmt.Printf("Erro ao criar Dockerfile: %s\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("[flang] Projeto '%s' inicializado!\n", name)
-	fmt.Printf("[flang] Arquivos criados:\n")
-	fmt.Printf("  %s\n", fgPath)
-	fmt.Printf("  %s\n", envPath)
-	fmt.Printf("  %s\n", giPath)
-	fmt.Printf("  %s\n", dfPath)
-	fmt.Printf("\n[flang] Execute: flang run %s\n", fgPath)
+	fmt.Printf("[flang] Projeto '%s' criado! (modo organizado)\n", title)
+	fmt.Println()
+	fmt.Printf("  %s/\n", name)
+	fmt.Printf("  ├── inicio.fg          (entry point)\n")
+	fmt.Printf("  ├── tema.fg            (visual)\n")
+	fmt.Printf("  ├── dados/\n")
+	fmt.Printf("  │   ├── produto.fg     (modelo)\n")
+	fmt.Printf("  │   └── cliente.fg     (modelo)\n")
+	fmt.Printf("  ├── telas/\n")
+	fmt.Printf("  │   ├── produtos.fg    (interface)\n")
+	fmt.Printf("  │   └── clientes.fg    (interface)\n")
+	fmt.Printf("  ├── eventos/\n")
+	fmt.Printf("  │   └── acoes.fg       (interacoes)\n")
+	fmt.Printf("  ├── .env\n")
+	fmt.Printf("  ├── .gitignore\n")
+	fmt.Printf("  └── Dockerfile\n")
+	fmt.Println()
+	fmt.Printf("[flang] Execute: flang run %s\n", filepath.Join(name, "inicio.fg"))
+	fmt.Println()
+	fmt.Println("[flang] Adicione novos modelos em dados/, telas em telas/,")
+	fmt.Println("        e importe no inicio.fg. Cada arquivo cuida de uma coisa.")
 }
