@@ -67,6 +67,10 @@ func (p *Parser) Parse() (*ast.Program, error) {
 			if err := p.parseBanco(); err != nil {
 				return nil, err
 			}
+		case lexer.TokenAutenticacao:
+			if err := p.parseAuth(); err != nil {
+				return nil, err
+			}
 		case lexer.TokenIntegracoes:
 			if err := p.parseIntegracoes(); err != nil {
 				return nil, err
@@ -158,7 +162,19 @@ func (p *Parser) skipIndent() {
 // isNameToken returns true if the token can be used as an identifier/name
 // (includes actual identifiers and type keywords that may be used as field/model names).
 func (p *Parser) isNameToken(tok lexer.Token) bool {
-	return tok.Type == lexer.TokenIdentifier || lexer.IsTypeKeyword(tok.Type)
+	// A name token is anything that's not whitespace, punctuation, or a block keyword
+	switch tok.Type {
+	case lexer.TokenEOF, lexer.TokenNewline, lexer.TokenIndent,
+		lexer.TokenColon, lexer.TokenDot, lexer.TokenComma,
+		lexer.TokenString, lexer.TokenNumber,
+		lexer.TokenEquals, lexer.TokenPlus, lexer.TokenMinus,
+		lexer.TokenStar, lexer.TokenSlash, lexer.TokenLParen, lexer.TokenRParen:
+		return false
+	}
+	if lexer.IsBlockKeyword(tok.Type) {
+		return false
+	}
+	return true
 }
 
 // parseDados parses the data models block.
@@ -316,14 +332,22 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 		return ast.FieldDinheiro, nil
 	case lexer.TokenSenha:
 		return ast.FieldSenha, nil
+	case lexer.TokenTextoLongo:
+		return ast.FieldTextoLongo, nil
+	case lexer.TokenEnum:
+		return ast.FieldEnum, nil
 	}
-	// Also check by value for identifiers that match type names
 	typeMap := map[string]ast.FieldType{
 		"texto": ast.FieldTexto, "numero": ast.FieldNumero, "data": ast.FieldData,
 		"booleano": ast.FieldBooleano, "email": ast.FieldEmail, "telefone": ast.FieldTelefone,
 		"imagem": ast.FieldImagem, "arquivo": ast.FieldArquivo, "upload": ast.FieldUpload,
 		"link": ast.FieldLink, "status": ast.FieldStatus, "dinheiro": ast.FieldDinheiro,
-		"senha": ast.FieldSenha,
+		"senha": ast.FieldSenha, "texto_longo": ast.FieldTextoLongo, "enum": ast.FieldEnum,
+		// EN
+		"text": ast.FieldTexto, "number": ast.FieldNumero, "date": ast.FieldData,
+		"boolean": ast.FieldBooleano, "phone": ast.FieldTelefone, "image": ast.FieldImagem,
+		"file": ast.FieldArquivo, "money": ast.FieldDinheiro, "password": ast.FieldSenha,
+		"long_text": ast.FieldTextoLongo,
 	}
 	if ft, ok := typeMap[tok.Value]; ok {
 		return ft, nil
@@ -1026,4 +1050,75 @@ func (p *Parser) parseNotifier(channel string) (*ast.Notifier, error) {
 	}
 
 	return notif, nil
+}
+
+// parseAuth parses the authentication block.
+// autenticacao
+//   usuario: email
+//   senha: senha
+//   roles: admin, usuario
+func (p *Parser) parseAuth() error {
+	p.advance() // consume 'autenticacao'
+	p.skipWhitespace()
+
+	auth := &ast.AuthConfig{
+		Enabled:    true,
+		UserModel:  "usuario",
+		LoginField: "email",
+		PassField:  "senha",
+		JWTSecret:  "flang-secret-change-me",
+	}
+
+	for !p.isAtEnd() && !p.isBlockKeyword() {
+		tok := p.current()
+
+		if tok.Type == lexer.TokenNewline || tok.Type == lexer.TokenIndent {
+			p.advance()
+			continue
+		}
+
+		// Accept any token as key (keywords can be used as config keys)
+		if tok.Type != lexer.TokenNewline && tok.Type != lexer.TokenIndent && tok.Type != lexer.TokenEOF {
+			key := p.advance().Value
+			p.skipIndent()
+
+			if p.current().Type == lexer.TokenColon {
+				p.advance()
+				p.skipIndent()
+			}
+
+			val := ""
+			if p.current().Type == lexer.TokenString {
+				val = p.advance().Value
+			} else if !p.isAtEnd() && p.current().Type != lexer.TokenNewline && p.current().Type != lexer.TokenComma {
+				val = p.advance().Value
+			}
+
+			switch key {
+			case "usuario", "user", "modelo", "model":
+				auth.UserModel = val
+			case "login", "campo_login", "login_field":
+				auth.LoginField = val
+			case "senha", "password", "campo_senha", "password_field":
+				auth.PassField = val
+			case "secret", "segredo", "jwt_secret":
+				auth.JWTSecret = val
+			case "roles", "permissoes":
+				auth.Roles = append(auth.Roles, val)
+				for !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+					if p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenIndent {
+						p.advance()
+						continue
+					}
+					auth.Roles = append(auth.Roles, p.advance().Value)
+				}
+			}
+			continue
+		}
+
+		p.advance()
+	}
+
+	p.program.Auth = auth
+	return nil
 }

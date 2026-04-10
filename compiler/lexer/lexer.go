@@ -23,6 +23,14 @@ const (
 	// Punctuation
 	TokenColon
 	TokenDot
+	TokenComma
+	TokenEquals
+	TokenPlus
+	TokenMinus
+	TokenStar
+	TokenSlash
+	TokenLParen
+	TokenRParen
 
 	// Block keywords
 	TokenSistema
@@ -34,6 +42,8 @@ const (
 	TokenTema
 	TokenLogica
 	TokenBanco
+	TokenAutenticacao
+	TokenConfig
 
 	// Import
 	TokenImportar
@@ -50,6 +60,11 @@ const (
 	TokenTextoKW
 	TokenBusca
 	TokenDashboard
+	TokenGrafico
+	TokenTabela
+	TokenCampo
+	TokenSelecionar
+	TokenAreaTexto
 
 	// Type keywords
 	TokenTexto
@@ -65,6 +80,8 @@ const (
 	TokenStatus
 	TokenDinheiro
 	TokenSenha
+	TokenTextoLongo
+	TokenEnum
 
 	// Event keywords
 	TokenQuando
@@ -89,25 +106,50 @@ const (
 	TokenRetornar
 	TokenMudar
 	TokenPara
+	TokenParaCada
+	TokenFuncao
+	TokenTentar
+	TokenErro
+
+	// Auth keywords
+	TokenLogin
+	TokenRegistro
+	TokenUsuario
+	TokenPermissao
+	TokenRequer
+	TokenAdmin
+	TokenPublico
+
+	// Integration keywords
+	TokenWhatsapp
+	TokenMensagem
+	TokenNotificar
+	TokenEmailInteg
+	TokenCron
+	TokenCada
+	TokenHora
+	TokenMinuto
+	TokenChamar
+	TokenApi
+	TokenWebhook
+	TokenPagamento
 
 	// Relationship keywords
 	TokenPertenceA
 	TokenTemMuitos
+	TokenMuitosParaMuitos
 
 	// Theme keywords
 	TokenCor
 	TokenIcone
 	TokenEscuro
 
-	// Integration keywords
-	TokenWhatsapp
-	TokenMensagem
-	TokenNotificar
-
 	// Modifier keywords
 	TokenObrigatorio
 	TokenUnico
 	TokenPadrao
+	TokenIndice
+	TokenSoftDelete
 )
 
 // Token represents a single lexical token.
@@ -124,186 +166,98 @@ func (t Token) String() string {
 }
 
 var keywords = map[string]TokenType{
-	// ==========================================
-	// PORTUGUÊS
-	// ==========================================
-
-	// Blocos
-	"sistema":     TokenSistema,
-	"dados":       TokenDados,
-	"telas":       TokenTelas,
-	"acoes":       TokenAcoes,
-	"eventos":     TokenEventos,
-	"integracoes": TokenIntegracoes,
-	"tema":        TokenTema,
-	"logica":      TokenLogica,
-	"banco":       TokenBanco,
-
-	// Import
-	"importar": TokenImportar,
-	"de":       TokenDe,
-
+	// ===================== PORTUGUÊS =====================
+	"sistema": TokenSistema, "dados": TokenDados, "telas": TokenTelas,
+	"acoes": TokenAcoes, "eventos": TokenEventos, "integracoes": TokenIntegracoes,
+	"tema": TokenTema, "logica": TokenLogica, "banco": TokenBanco,
+	"autenticacao": TokenAutenticacao, "config": TokenConfig,
+	"importar": TokenImportar, "de": TokenDe,
 	// Tela
-	"tela":       TokenTela,
-	"titulo":     TokenTitulo,
-	"lista":      TokenLista,
-	"mostrar":    TokenMostrar,
-	"botao":      TokenBotao,
-	"formulario": TokenFormulario,
-	"entrada":    TokenEntrada,
-	"busca":      TokenBusca,
-	"dashboard":  TokenDashboard,
-
+	"tela": TokenTela, "titulo": TokenTitulo, "lista": TokenLista,
+	"mostrar": TokenMostrar, "botao": TokenBotao, "formulario": TokenFormulario,
+	"entrada": TokenEntrada, "busca": TokenBusca, "dashboard": TokenDashboard,
+	"grafico": TokenGrafico, "tabela": TokenTabela, "campo": TokenCampo,
+	"selecionar": TokenSelecionar, "area_texto": TokenAreaTexto,
 	// Tipos
-	"texto":    TokenTexto,
-	"numero":   TokenNumero,
-	"data":     TokenData,
-	"booleano": TokenBooleano,
-	"email":    TokenEmail,
-	"telefone": TokenTelefone,
-	"imagem":   TokenImagem,
-	"arquivo":  TokenArquivo,
-	"upload":   TokenUpload,
-	"link":     TokenLink,
-	"status":   TokenStatus,
-	"dinheiro": TokenDinheiro,
-	"senha":    TokenSenha,
-
+	"texto": TokenTexto, "numero": TokenNumero, "data": TokenData,
+	"booleano": TokenBooleano, "email": TokenEmail, "telefone": TokenTelefone,
+	"imagem": TokenImagem, "arquivo": TokenArquivo, "upload": TokenUpload,
+	"link": TokenLink, "status": TokenStatus, "dinheiro": TokenDinheiro,
+	"senha": TokenSenha, "texto_longo": TokenTextoLongo, "enum": TokenEnum,
 	// Eventos
-	"quando":    TokenQuando,
-	"clicar":    TokenClicar,
-	"criar":     TokenCriar,
-	"atualizar": TokenAtualizar,
-	"deletar":   TokenDeletar,
-	"enviar":    TokenEnviar,
-
+	"quando": TokenQuando, "clicar": TokenClicar, "criar": TokenCriar,
+	"atualizar": TokenAtualizar, "deletar": TokenDeletar, "enviar": TokenEnviar,
 	// Lógica
-	"se":       TokenSe,
-	"senao":    TokenSenao,
-	"igual":    TokenIgual,
-	"maior":    TokenMaior,
-	"menor":    TokenMenor,
-	"e":        TokenE,
-	"ou":       TokenOu,
-	"entao":    TokenEntao,
-	"validar":  TokenValidar,
-	"calcular": TokenCalcular,
-	"definir":  TokenDefinir,
-	"retornar": TokenRetornar,
-	"mudar":    TokenMudar,
-	"para":     TokenPara,
-
+	"se": TokenSe, "senao": TokenSenao, "igual": TokenIgual,
+	"maior": TokenMaior, "menor": TokenMenor, "e": TokenE, "ou": TokenOu,
+	"entao": TokenEntao, "validar": TokenValidar, "calcular": TokenCalcular,
+	"definir": TokenDefinir, "retornar": TokenRetornar, "mudar": TokenMudar,
+	"para": TokenPara, "para_cada": TokenParaCada, "funcao": TokenFuncao,
+	"tentar": TokenTentar, "erro": TokenErro,
+	// Auth
+	"login": TokenLogin, "registro": TokenRegistro, "usuario": TokenUsuario,
+	"permissao": TokenPermissao, "requer": TokenRequer, "admin": TokenAdmin,
+	"publico": TokenPublico,
+	// Integrações
+	"whatsapp": TokenWhatsapp, "mensagem": TokenMensagem, "notificar": TokenNotificar,
+	"cron": TokenCron, "cada": TokenCada, "hora": TokenHora, "minuto": TokenMinuto,
+	"chamar": TokenChamar, "api": TokenApi, "webhook": TokenWebhook,
+	"pagamento": TokenPagamento,
 	// Relacionamentos
-	"pertence_a": TokenPertenceA,
-	"tem_muitos": TokenTemMuitos,
-
+	"pertence_a": TokenPertenceA, "tem_muitos": TokenTemMuitos,
+	"muitos_para_muitos": TokenMuitosParaMuitos,
 	// Tema
-	"cor":    TokenCor,
-	"icone":  TokenIcone,
-	"escuro": TokenEscuro,
-
-	// Integracoes
-	"whatsapp":  TokenWhatsapp,
-	"mensagem":  TokenMensagem,
-	"notificar": TokenNotificar,
-
+	"cor": TokenCor, "icone": TokenIcone, "escuro": TokenEscuro,
 	// Modificadores
-	"obrigatorio": TokenObrigatorio,
-	"unico":       TokenUnico,
-	"padrao":      TokenPadrao,
+	"obrigatorio": TokenObrigatorio, "unico": TokenUnico, "padrao": TokenPadrao,
+	"indice": TokenIndice, "soft_delete": TokenSoftDelete,
 
-	// ==========================================
-	// ENGLISH
-	// ==========================================
-
-	// Blocks
-	"system":       TokenSistema,
-	"models":       TokenDados,
-	"screens":      TokenTelas,
-	"actions":      TokenAcoes,
-	"events":       TokenEventos,
-	"integrations": TokenIntegracoes,
-	"theme":        TokenTema,
-	"logic":        TokenLogica,
-	"database":     TokenBanco,
-	"db":           TokenBanco,
-
-	// Import
-	"import": TokenImportar,
-	"from":   TokenDe,
-
+	// ===================== ENGLISH =====================
+	"system": TokenSistema, "models": TokenDados, "screens": TokenTelas,
+	"actions": TokenAcoes, "events": TokenEventos, "integrations": TokenIntegracoes,
+	"theme": TokenTema, "logic": TokenLogica, "database": TokenBanco, "db": TokenBanco,
+	"auth": TokenAutenticacao, "authentication": TokenAutenticacao,
+	"import": TokenImportar, "from": TokenDe,
 	// Screen
-	"screen": TokenTela,
-	"title":  TokenTitulo,
-	"list":   TokenLista,
-	"show":   TokenMostrar,
-	"button": TokenBotao,
-	"form":   TokenFormulario,
-	"input":  TokenEntrada,
-	"search": TokenBusca,
-
+	"screen": TokenTela, "title": TokenTitulo, "list": TokenLista,
+	"show": TokenMostrar, "button": TokenBotao, "form": TokenFormulario,
+	"input": TokenEntrada, "search": TokenBusca, "chart": TokenGrafico,
+	"table": TokenTabela, "field": TokenCampo, "select": TokenSelecionar,
+	"textarea": TokenAreaTexto,
 	// Types
-	"text":     TokenTexto,
-	"number":   TokenNumero,
-	"date":     TokenData,
-	"boolean":  TokenBooleano,
-	"phone":    TokenTelefone,
-	"image":    TokenImagem,
-	"file":     TokenArquivo,
-	"money":    TokenDinheiro,
-	"password": TokenSenha,
-	"currency": TokenDinheiro,
-
+	"text": TokenTexto, "number": TokenNumero, "date": TokenData,
+	"boolean": TokenBooleano, "phone": TokenTelefone, "image": TokenImagem,
+	"file": TokenArquivo, "money": TokenDinheiro, "password": TokenSenha,
+	"currency": TokenDinheiro, "long_text": TokenTextoLongo,
 	// Events
-	"when":   TokenQuando,
-	"click":  TokenClicar,
-	"create": TokenCriar,
-	"update": TokenAtualizar,
-	"delete": TokenDeletar,
-	"send":   TokenEnviar,
-
+	"when": TokenQuando, "click": TokenClicar, "create": TokenCriar,
+	"update": TokenAtualizar, "delete": TokenDeletar, "send": TokenEnviar,
 	// Logic
-	"if":       TokenSe,
-	"else":     TokenSenao,
-	"equals":   TokenIgual,
-	"equal":    TokenIgual,
-	"greater":  TokenMaior,
-	"less":     TokenMenor,
-	"and":      TokenE,
-	"or":       TokenOu,
-	"then":     TokenEntao,
-	"validate": TokenValidar,
-	"compute":  TokenCalcular,
-	"set":      TokenDefinir,
-	"return":   TokenRetornar,
-	"change":   TokenMudar,
-	"to":       TokenPara,
-
+	"if": TokenSe, "else": TokenSenao, "equals": TokenIgual, "equal": TokenIgual,
+	"greater": TokenMaior, "less": TokenMenor, "and": TokenE, "or": TokenOu,
+	"then": TokenEntao, "validate": TokenValidar, "compute": TokenCalcular,
+	"set": TokenDefinir, "return": TokenRetornar, "change": TokenMudar,
+	"to": TokenPara, "for_each": TokenParaCada, "function": TokenFuncao,
+	"try": TokenTentar, "error": TokenErro,
+	// Auth
+	"register": TokenRegistro, "user": TokenUsuario, "permission": TokenPermissao,
+	"requires": TokenRequer, "public": TokenPublico,
+	// Integrations
+	"message": TokenMensagem, "notify": TokenNotificar,
+	"every": TokenCada, "hour": TokenHora, "minute": TokenMinuto,
+	"call": TokenChamar, "payment": TokenPagamento,
 	// Relationships
-	"belongs_to": TokenPertenceA,
-	"has_many":   TokenTemMuitos,
-
+	"belongs_to": TokenPertenceA, "has_many": TokenTemMuitos,
+	"many_to_many": TokenMuitosParaMuitos,
 	// Theme
-	"color": TokenCor,
-	"icon":  TokenIcone,
-	"dark":  TokenEscuro,
-
-	// Integrations (EN)
-	"message": TokenMensagem,
-	"notify":  TokenNotificar,
-
+	"color": TokenCor, "icon": TokenIcone, "dark": TokenEscuro,
 	// Modifiers
-	"required": TokenObrigatorio,
-	"unique":   TokenUnico,
-	"default":  TokenPadrao,
+	"required": TokenObrigatorio, "unique": TokenUnico, "default": TokenPadrao,
+	"index": TokenIndice,
 
-	// Color names (work in both languages)
-	"azul":     TokenIdentifier,
-	"verde":    TokenIdentifier,
-	"vermelho": TokenIdentifier,
-	"blue":     TokenIdentifier,
-	"green":    TokenIdentifier,
-	"red":      TokenIdentifier,
+	// Colors
+	"azul": TokenIdentifier, "verde": TokenIdentifier, "vermelho": TokenIdentifier,
+	"blue": TokenIdentifier, "green": TokenIdentifier, "red": TokenIdentifier,
 }
 
 // Lexer tokenizes Flang source code.
@@ -416,6 +370,45 @@ func (l *Lexer) scanToken() error {
 		return nil
 	}
 
+	// Comma
+	if ch == ',' {
+		l.tokens = append(l.tokens, Token{Type: TokenComma, Value: ",", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+
+	// Operators
+	if ch == '=' {
+		l.tokens = append(l.tokens, Token{Type: TokenEquals, Value: "=", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '+' {
+		l.tokens = append(l.tokens, Token{Type: TokenPlus, Value: "+", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '-' {
+		l.tokens = append(l.tokens, Token{Type: TokenMinus, Value: "-", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '*' {
+		l.tokens = append(l.tokens, Token{Type: TokenStar, Value: "*", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == '(' {
+		l.tokens = append(l.tokens, Token{Type: TokenLParen, Value: "(", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+	if ch == ')' {
+		l.tokens = append(l.tokens, Token{Type: TokenRParen, Value: ")", Line: l.line, Column: l.col})
+		l.advance()
+		return nil
+	}
+
 	// String literal
 	if ch == '"' {
 		return l.scanString()
@@ -503,7 +496,8 @@ func (l *Lexer) scanIdentifier() error {
 // IsBlockKeyword returns true if the token type is a top-level block keyword.
 func IsBlockKeyword(tt TokenType) bool {
 	switch tt {
-	case TokenSistema, TokenDados, TokenTelas, TokenAcoes, TokenEventos, TokenIntegracoes, TokenTema, TokenLogica, TokenBanco:
+	case TokenSistema, TokenDados, TokenTelas, TokenAcoes, TokenEventos, TokenIntegracoes,
+		TokenTema, TokenLogica, TokenBanco, TokenAutenticacao, TokenConfig:
 		return true
 	}
 	return false
@@ -514,7 +508,7 @@ func IsTypeKeyword(tt TokenType) bool {
 	switch tt {
 	case TokenTexto, TokenNumero, TokenData, TokenBooleano, TokenEmail,
 		TokenTelefone, TokenImagem, TokenArquivo, TokenUpload, TokenLink,
-		TokenStatus, TokenDinheiro, TokenSenha:
+		TokenStatus, TokenDinheiro, TokenSenha, TokenTextoLongo, TokenEnum:
 		return true
 	}
 	return false

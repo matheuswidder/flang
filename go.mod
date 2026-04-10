@@ -7,6 +7,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/mattn/go-sqlite3 v1.14.42
 	go.mau.fi/whatsmeow v0.0.0-20260327181659-02ec817e7cf4
+	golang.org/x/crypto v0.48.0
 	google.golang.org/protobuf v1.36.11
 	modernc.org/sqlite v1.48.2
 )
@@ -27,7 +28,6 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.27 // indirect
 	go.mau.fi/libsignal v0.2.1 // indirect
 	go.mau.fi/util v0.9.6 // indirect
-	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect

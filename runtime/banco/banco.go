@@ -192,18 +192,91 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 }
 
 // Listar returns all rows from a model table.
-func (b *Banco) Listar(modelo string) ([]map[string]any, error) {
+// ListarParams holds query parameters for listing.
+type ListarParams struct {
+	Pagina  int
+	Limite  int
+	Ordenar string
+	Ordem   string // asc, desc
+	Busca   string
+	Filtros map[string]string
+}
+
+func (b *Banco) Listar(modelo string, params *ListarParams) ([]map[string]any, int64, error) {
 	if _, ok := b.Models[modelo]; !ok {
-		return nil, fmt.Errorf("modelo '%s' não encontrado", modelo)
+		return nil, 0, fmt.Errorf("modelo '%s' não encontrado", modelo)
 	}
 
-	rows, err := b.DB.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY %s DESC", q(modelo), q("id")))
+	// Defaults
+	if params == nil {
+		params = &ListarParams{}
+	}
+	if params.Limite <= 0 {
+		params.Limite = 100
+	}
+	if params.Pagina <= 0 {
+		params.Pagina = 1
+	}
+	if params.Ordem == "" {
+		params.Ordem = "DESC"
+	}
+	if params.Ordenar == "" {
+		params.Ordenar = "id"
+	}
+
+	var where []string
+	var args []any
+	n := 1
+
+	// Filters
+	model := b.Models[modelo]
+	for _, f := range model.Fields {
+		fname := strings.ToLower(f.Name)
+		if val, ok := params.Filtros[fname]; ok && val != "" {
+			where = append(where, fmt.Sprintf("%s = %s", q(fname), b.ph(n)))
+			args = append(args, val)
+			n++
+		}
+	}
+
+	// Search (across all text fields)
+	if params.Busca != "" {
+		var searchConds []string
+		for _, f := range model.Fields {
+			if f.Type.SQLType() == "TEXT" {
+				searchConds = append(searchConds, fmt.Sprintf("%s LIKE %s", q(strings.ToLower(f.Name)), b.ph(n)))
+				args = append(args, "%"+params.Busca+"%")
+				n++
+			}
+		}
+		if len(searchConds) > 0 {
+			where = append(where, "("+strings.Join(searchConds, " OR ")+")")
+		}
+	}
+
+	whereSQL := ""
+	if len(where) > 0 {
+		whereSQL = " WHERE " + strings.Join(where, " AND ")
+	}
+
+	// Count total
+	var total int64
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL)
+	b.DB.QueryRow(countQuery, args...).Scan(&total)
+
+	// Order + Pagination
+	offset := (params.Pagina - 1) * params.Limite
+	query := fmt.Sprintf("SELECT * FROM %s%s ORDER BY %s %s LIMIT %d OFFSET %d",
+		q(modelo), whereSQL, q(params.Ordenar), params.Ordem, params.Limite, offset)
+
+	rows, err := b.DB.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	return scanRows(rows)
+	results, err := scanRows(rows)
+	return results, total, err
 }
 
 // Buscar returns a single row by ID.

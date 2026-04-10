@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/flavio/flang/compiler/ast"
+	authpkg "github.com/flavio/flang/runtime/auth"
 	"github.com/flavio/flang/runtime/banco"
 	wa "github.com/flavio/flang/runtime/whatsapp"
 )
@@ -20,6 +21,7 @@ type Servidor struct {
 	Porta   string
 	WS      *WSHub
 	WA      *wa.Client
+	Auth    *authpkg.Auth
 }
 
 // Novo creates a new server.
@@ -34,8 +36,26 @@ func (s *Servidor) Iniciar() error {
 	mux.HandleFunc("/", s.handlePagina)
 	mux.HandleFunc("/api/", s.handleAPI)
 	mux.HandleFunc("/ws", s.WS.HandleWS)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"ok"}`))
+	})
 
-	handler := s.middleware(mux)
+	// Auth routes
+	if s.Auth != nil {
+		mux.HandleFunc("/api/login", s.Auth.Login)
+		mux.HandleFunc("/api/registro", s.Auth.Registrar)
+		mux.HandleFunc("/api/register", s.Auth.Registrar)
+		mux.HandleFunc("/api/me", s.Auth.Me)
+	}
+
+	// Apply middleware chain
+	var handler http.Handler = mux
+	if s.Auth != nil {
+		handler = s.Auth.Middleware(handler)
+	}
+	handler = s.middleware(handler)
+
 	return http.ListenAndServe(":"+s.Porta, handler)
 }
 
@@ -93,12 +113,55 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		items, err := s.DB.Listar(modelo)
+		// Parse query params for pagination, filters, search
+		q := r.URL.Query()
+		pagina, _ := strconv.Atoi(q.Get("pagina"))
+		if pagina == 0 {
+			pagina, _ = strconv.Atoi(q.Get("page"))
+		}
+		limite, _ := strconv.Atoi(q.Get("limite"))
+		if limite == 0 {
+			limite, _ = strconv.Atoi(q.Get("limit"))
+		}
+		ordenar := q.Get("ordenar")
+		if ordenar == "" {
+			ordenar = q.Get("sort")
+		}
+		ordem := q.Get("ordem")
+		if ordem == "" {
+			ordem = q.Get("order")
+		}
+		busca := q.Get("busca")
+		if busca == "" {
+			busca = q.Get("search")
+		}
+
+		// Collect field filters
+		filtros := make(map[string]string)
+		if model, ok := s.DB.Models[modelo]; ok {
+			for _, f := range model.Fields {
+				fname := strings.ToLower(f.Name)
+				if val := q.Get(fname); val != "" {
+					filtros[fname] = val
+				}
+			}
+		}
+
+		params := &banco.ListarParams{
+			Pagina: pagina, Limite: limite,
+			Ordenar: ordenar, Ordem: ordem,
+			Busca: busca, Filtros: filtros,
+		}
+
+		items, total, err := s.DB.Listar(modelo, params)
 		if err != nil {
 			s.jsonError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		s.jsonOK(w, items)
+		// Return with pagination metadata
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Total-Count", fmt.Sprintf("%d", total))
+		json.NewEncoder(w).Encode(items)
 
 	case http.MethodPost:
 		body, err := io.ReadAll(r.Body)

@@ -8,6 +8,7 @@ import (
 	"github.com/flavio/flang/compiler/ast"
 	"github.com/flavio/flang/compiler/lexer"
 	"github.com/flavio/flang/compiler/parser"
+	authpkg "github.com/flavio/flang/runtime/auth"
 	"github.com/flavio/flang/runtime/banco"
 	"github.com/flavio/flang/runtime/servidor"
 	wa "github.com/flavio/flang/runtime/whatsapp"
@@ -104,6 +105,15 @@ func resolveImports(program *ast.Program, baseDir string, resolved map[string]bo
 
 // Executar loads a .fg file and runs the application.
 func Executar(arquivo string, porta string) error {
+	// Load .env
+	envPath := filepath.Join(filepath.Dir(arquivo), ".env")
+	LoadEnv(envPath)
+
+	// Override port from env
+	if envPort := GetEnv("PORT", ""); envPort != "" && porta == "8080" {
+		porta = envPort
+	}
+
 	fmt.Printf("[flang] Carregando: %s\n", arquivo)
 
 	program, err := parseFG(arquivo)
@@ -131,6 +141,17 @@ func Executar(arquivo string, porta string) error {
 		return fmt.Errorf("erro no banco: %w", err)
 	}
 
+	// Auth
+	var authHandler *authpkg.Auth
+	if program.Auth != nil && program.Auth.Enabled {
+		authHandler = authpkg.Novo(
+			db.DB, program.Auth.UserModel, program.Auth.LoginField,
+			program.Auth.PassField, program.Auth.JWTSecret,
+		)
+		authHandler.SetupTable()
+		fmt.Println("[flang] Auth: ativado")
+	}
+
 	// WhatsApp
 	var waClient *wa.Client
 	if program.WhatsApp != nil && program.WhatsApp.Enabled {
@@ -146,6 +167,7 @@ func Executar(arquivo string, porta string) error {
 
 	// Server
 	srv := servidor.Novo(program, db, porta)
+	srv.Auth = authHandler
 	srv.WA = waClient
 	fmt.Printf("\n[flang] %s rodando em http://localhost:%s\n\n", program.System.Name, porta)
 	return srv.Iniciar()
