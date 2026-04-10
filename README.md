@@ -1,29 +1,34 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Flang-v0.4-6366f1?style=for-the-badge&logo=go&logoColor=white" alt="Flang v0.4">
+  <img src="logo.png" alt="Flang" width="400">
+</p>
+
+<p align="center">
+  <strong>A linguagem de programacao que transforma ideias em aplicacoes completas.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Flang-v0.4-6366f1?style=for-the-badge" alt="Flang v0.4">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go 1.21+">
+  <img src="https://img.shields.io/badge/Bilingue-PT%20%7C%20EN-f59e0b?style=for-the-badge" alt="Bilingual">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
   <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" alt="PRs Welcome">
 </p>
 
-<h1 align="center">Flang - A Programming Language for Full-Stack Apps</h1>
-
 <p align="center">
-  <strong>Descreva sua aplicacao em um arquivo <code>.fg</code> e rode. Backend, frontend, banco de dados, API REST e WhatsApp - tudo automatico.</strong>
-</p>
-
-<p align="center">
-  <a href="#instalacao">Instalacao</a> |
-  <a href="#quick-start">Quick Start</a> |
-  <a href="#documentacao">Documentacao</a> |
-  <a href="#exemplos">Exemplos</a> |
-  <a href="#contribuir">Contribuir</a>
+  <a href="#instalacao">Instalacao</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="docs/TUTORIAL.md">Tutorial</a> ·
+  <a href="docs/SPEC.md">Especificacao</a> ·
+  <a href="docs/API.md">API</a> ·
+  <a href="docs/EXAMPLES.md">Exemplos</a> ·
+  <a href="docs/FAQ.md">FAQ</a>
 </p>
 
 ---
 
 ## O que e o Flang?
 
-**Flang** e uma linguagem de programacao **declarativa e bilingue** (Portugues/English) que gera aplicacoes completas a partir de arquivos `.fg`. Voce descreve **o que** a aplicacao faz, e o Flang cuida do **como**.
+**Flang** e uma linguagem de programacao **completa, bilingue e declarativa** que gera aplicacoes full-stack a partir de arquivos `.fg`. Escreva o que sua aplicacao faz — Flang cuida do resto.
 
 ```
 sistema loja
@@ -47,55 +52,99 @@ telas
 eventos
   quando clicar "Novo Produto"
     criar produto
+
+logica
+  funcao aplicar_desconto(preco, percentual)
+    retornar preco - (preco * percentual / 100)
+
+  se produto.preco maior 100
+    mostrar "Produto premium"
 ```
 
 ```bash
 flang run inicio.fg
-# Aplicacao completa rodando em http://localhost:8080
+# App completa rodando em http://localhost:8080
 ```
-
-**Resultado:** Dashboard com sidebar, dark mode, CRUD completo, API REST, banco de dados, WebSocket em tempo real e WhatsApp - tudo de um unico arquivo `.fg`.
 
 ---
 
 ## Por que Flang?
 
-| Problema | Solucao Flang |
-|----------|--------------|
-| Configurar backend, frontend, DB separadamente | **1 arquivo `.fg` = app completa** |
-| Semanas para um CRUD basico | **Segundos** |
-| Aprender React + Node + SQL + CSS | **Aprenda Flang em 5 minutos** |
-| API REST manual para cada modelo | **Gerada automaticamente** |
-| WebSocket complexo de implementar | **Embutido e automatico** |
-| Integracao WhatsApp trabalhosa | **3 linhas no `.fg`** |
-| Escolher entre Portugues e English | **Bilingue - use os dois** |
+| Problema | Flang |
+|----------|-------|
+| Semanas para um CRUD | **Segundos** |
+| Backend + Frontend + DB separados | **1 arquivo .fg** |
+| Aprender React + Node + SQL | **Aprenda Flang em 5 min** |
+| API REST manual | **Automatica com paginacao, filtros, busca** |
+| WebSocket complexo | **Embutido e automatico** |
+| WhatsApp/Email trabalhoso | **3 linhas no .fg** |
+| Portugues ou English? | **Os dois. Misture livremente** |
+| Sem logica de programacao | **Variaveis, funcoes, loops, if/else** |
 
 ---
 
 ## Features
 
-- **Linguagem Bilingue** - Escreva em Portugues, English ou misture os dois
-- **Backend Embutido** - Servidor HTTP com API REST automatica
-- **Frontend Dinamico** - Dashboard moderno com glassmorphism, dark mode, sidebar
-- **3 Bancos de Dados** - SQLite (padrao), MySQL, PostgreSQL
-- **WebSocket** - Atualizacoes em tempo real entre multiplos usuarios
-- **WhatsApp** - Envio automatico de mensagens via whatsmeow
-- **Sistema de Imports** - Divida seu projeto em multiplos `.fg`
-- **Logica e Validacao** - Regras de negocio declarativas
-- **13 Tipos de Dados** - texto, numero, dinheiro, email, telefone, status, senha...
-- **Seguranca** - XSS protection, headers, sanitizacao, validacao automatica
-- **Responsivo** - Desktop e mobile out-of-the-box
-- **Zero Dependencias Externas** - Um unico binario
+### Linguagem Completa
+- **Bilingue** — Portugues e English, misture livremente
+- **Variaveis** — `definir x = 10` / `set x = 10`
+- **Funcoes** — `funcao soma(a, b)` / `function sum(a, b)`
+- **Condicionais** — `se/senao` / `if/else` com `senao se` / `else if`
+- **Loops** — `repetir N vezes`, `enquanto`, `para cada`
+- **Controle** — `parar` (break), `continuar` (continue), `retornar` (return)
+- **Erros** — `tentar/erro` (try/catch)
+- **16 operadores** — `+ - * / == != > < >= <= e ou nao`
+- **16 funcoes built-in** — texto, numero, tamanho, maiusculo, minusculo, arredondar, aleatorio, agora, contem, dividir, juntar, abs, min, max, inteiro, tipo
+
+### Full-Stack Automatico
+- **Backend** — Servidor HTTP embutido com API REST
+- **Frontend** — Dashboard moderno com glassmorphism, dark mode, sidebar
+- **Banco de Dados** — SQLite, MySQL, PostgreSQL
+- **WebSocket** — Tempo real entre multiplos usuarios
+- **Upload** — Arquivos salvos em disco com preview
+- **Paginacao** — `?pagina=1&limite=10&busca=texto&ordenar=preco`
+- **Export** — CSV e JSON com um clique
+
+### Seguranca
+- **Auth** — Login, registro, JWT, bcrypt, roles
+- **Validacao** — obrigatorio, unico, email, telefone
+- **XSS/SQL Injection** — Protecao automatica
+- **Headers** — X-Content-Type-Options, X-Frame-Options, CSP
+
+### Integracoes
+- **WhatsApp** — Mensagens automaticas via whatsmeow
+- **Email** — SMTP com templates
+- **Cron** — Agendamentos (`cada 5 minutos`)
+- **HTTP Client** — Chamar APIs externas
+- **Webhooks** — Receber notificacoes
+
+### DevOps
+- **Docker** — Dockerfile + docker-compose
+- **VS Code** — Syntax highlighting extension
+- **CI/CD** — GitHub Actions
+- **Instalador** — .exe para Windows, .sh para Linux/macOS
 
 ---
 
 ## Instalacao
 
-### Pre-requisitos
+### Windows
 
-- [Go 1.21+](https://go.dev/dl/)
+Baixe e execute o instalador:
 
-### Build
+```
+FlangSetup-0.4.0.exe
+```
+
+Instala em `C:\Flang`, adiciona ao PATH automaticamente.
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://github.com/flaviokalleu/flang/releases/latest/download/install.sh | sh
+```
+
+### Build do Fonte
 
 ```bash
 git clone https://github.com/flaviokalleu/flang.git
@@ -103,245 +152,61 @@ cd flang
 go build -o flang .
 ```
 
-### Verificar instalacao
-
-```bash
-./flang version
-```
-
 ---
 
 ## Quick Start
 
-### 1. Crie seu primeiro app
+### 1. Criar projeto
 
 ```bash
-./flang new meu-app
+flang new meu-app
 ```
 
-Isso cria `meu-app/inicio.fg` com um template basico.
-
-### 2. Rode
+### 2. Rodar
 
 ```bash
 cd meu-app
-../flang run inicio.fg
+flang run inicio.fg
 ```
 
-### 3. Abra no navegador
+### 3. Abrir
 
 ```
 http://localhost:8080
-```
-
-Pronto. App completa rodando.
-
----
-
-## Documentacao
-
-### Blocos da Linguagem
-
-Flang usa **blocos** para definir cada parte da aplicacao:
-
-| Bloco | English | O que faz |
-|-------|---------|-----------|
-| `sistema` | `system` | Nome da aplicacao |
-| `dados` | `models` | Modelos de dados (tabelas) |
-| `telas` | `screens` | Interface do usuario |
-| `eventos` | `events` | Acoes do usuario |
-| `logica` | `logic` | Regras de negocio |
-| `tema` | `theme` | Customizacao visual |
-| `banco` | `database` | Configuracao do banco |
-| `integracoes` | `integrations` | WhatsApp, etc |
-
-### Tipos de Dados
-
-| Tipo PT | Tipo EN | SQL | HTML Input | Descricao |
-|---------|---------|-----|------------|-----------|
-| `texto` | `text` | TEXT | text | Texto simples |
-| `numero` | `number` | REAL | number | Numero decimal |
-| `dinheiro` | `money` | REAL | number | Valor monetario (R$) |
-| `email` | `email` | TEXT | email | Email com validacao |
-| `telefone` | `phone` | TEXT | tel | Telefone com validacao |
-| `status` | `status` | TEXT | text | Badge colorido automatico |
-| `data` | `date` | DATETIME | date | Data |
-| `booleano` | `boolean` | INTEGER | checkbox | Verdadeiro/Falso |
-| `senha` | `password` | TEXT | password | Mascarado |
-| `imagem` | `image` | TEXT | file | Upload de imagem |
-| `arquivo` | `file` | TEXT | file | Upload de arquivo |
-| `upload` | `upload` | TEXT | file | Upload generico |
-| `link` | `link` | TEXT | url | URL |
-
-### Modificadores
-
-| Modificador PT | EN | O que faz |
-|----------------|----|-----------|
-| `obrigatorio` | `required` | Campo NOT NULL + validacao |
-| `unico` | `unique` | Valor unico na tabela |
-| `pertence_a` | `belongs_to` | Foreign key |
-| `padrao` | `default` | Valor padrao |
-
-### Status Badges Automaticos
-
-Campos do tipo `status` ganham badges coloridos automaticamente:
-
-| Cor | Valores |
-|-----|---------|
-| Verde | ativo, livre, aberto, ok, disponivel, pronto, entregue, pago |
-| Amarelo | pendente, aguardando, em andamento, reservado, preparando |
-| Vermelho | inativo, ocupado, fechado, cancelado, bloqueado |
-| Azul | outros valores |
-
-### Sistema de Imports
-
-Divida seu projeto em multiplos arquivos `.fg`:
-
-```
-importar "dados.fg"              # importa tudo do arquivo
-importar dados de "modelos.fg"   # so os dados
-importar telas de "paginas.fg"   # so as telas
-importar produto de "dados.fg"   # modelo especifico
-```
-
-```
-# English
-import "data.fg"
-import models from "models.fg"
-import screens from "pages.fg"
-```
-
-### Configuracao de Banco
-
-**SQLite (padrao - zero config):**
-```
-sistema meu_app
-dados
-  ...
-```
-
-**PostgreSQL:**
-```
-banco
-  driver: postgres
-  host: "localhost"
-  porta: "5432"
-  nome: "meu_banco"
-  usuario: "postgres"
-  senha: "minhasenha"
-```
-
-**MySQL:**
-```
-database
-  driver: mysql
-  host: "localhost"
-  port: "3306"
-  name: "my_database"
-  user: "root"
-  password: "mypassword"
-```
-
-### WhatsApp
-
-```
-integracoes
-  whatsapp
-    quando criar pedido
-      enviar mensagem para telefone
-        texto "Ola {cliente}! Pedido de {prato} recebido! Valor: R${valor}"
-
-    quando atualizar pedido
-      enviar mensagem para telefone
-        texto "Status atualizado: {status}"
-```
-
-Na primeira execucao, escaneie o QR Code no terminal com WhatsApp > Dispositivos Conectados.
-
-**Templates:** Use `{campo}` para inserir valores do registro na mensagem.
-
-### API REST Automatica
-
-Cada modelo gera automaticamente:
-
-| Metodo | Rota | Acao |
-|--------|------|------|
-| `GET` | `/api/{modelo}` | Listar todos |
-| `GET` | `/api/{modelo}/{id}` | Buscar por ID |
-| `POST` | `/api/{modelo}` | Criar |
-| `PUT` | `/api/{modelo}/{id}` | Atualizar |
-| `DELETE` | `/api/{modelo}/{id}` | Deletar |
-
-Exemplo:
-```bash
-# Listar produtos
-curl http://localhost:8080/api/produto
-
-# Criar produto
-curl -X POST http://localhost:8080/api/produto \
-  -H "Content-Type: application/json" \
-  -d '{"nome":"Camiseta","preco":59.90,"status":"ativo"}'
-```
-
-### WebSocket
-
-Automatico. Abra a app em 2 abas - quando uma modifica dados, a outra atualiza instantaneamente.
-
-Endpoint: `ws://localhost:8080/ws`
-
-Mensagens recebidas:
-```json
-{"type":"criar","model":"produto","id":1,"data":{...}}
-{"type":"atualizar","model":"produto","id":1,"data":{...}}
-{"type":"deletar","model":"produto","id":1}
 ```
 
 ---
 
 ## Exemplos
 
-### Loja (Portugues)
+### Portugues
+
 ```
-sistema loja
+sistema restaurante
 
 dados
-  produto
+  prato
     nome: texto obrigatorio
     preco: dinheiro
-    categoria: texto
     status: status
 
-  cliente
-    nome: texto obrigatorio
-    email: email unico
-    telefone: telefone
-
 telas
-  tela produtos
-    titulo "Produtos"
-    lista produto
+  tela cardapio
+    titulo "Cardapio"
+    lista prato
       mostrar nome
       mostrar preco
       mostrar status
     botao azul
-      texto "Novo Produto"
-
-  tela clientes
-    titulo "Clientes"
-    lista cliente
-      mostrar nome
-      mostrar email
-    botao verde
-      texto "Novo Cliente"
+      texto "Novo Prato"
 
 eventos
-  quando clicar "Novo Produto"
-    criar produto
-  quando clicar "Novo Cliente"
-    criar cliente
+  quando clicar "Novo Prato"
+    criar prato
 ```
 
-### Store (English)
+### English
+
 ```
 system store
 
@@ -350,10 +215,6 @@ models
     name: text required
     price: money
     status: status
-
-  customer
-    name: text required
-    email: email unique
 
 screens
   screen products
@@ -370,9 +231,75 @@ events
     create product
 ```
 
-### Projeto Modular (com imports)
+### Com Logica
+
 ```
-# inicio.fg
+logica
+
+  definir taxa_imposto = 0.15
+
+  funcao calcular_total(preco, quantidade)
+    definir subtotal = preco * quantidade
+    definir imposto = subtotal * taxa_imposto
+    retornar subtotal + imposto
+
+  repetir 10 vezes
+    mostrar "processando..."
+
+  enquanto estoque menor 5
+    mostrar "estoque critico!"
+    parar
+
+  se pedido.valor maior 200
+    definir pedido.frete = 0
+    mostrar "Frete gratis!"
+  senao
+    definir pedido.frete = 15.90
+```
+
+### Com Auth
+
+```
+autenticacao
+  modelo: usuario
+  campo_login: email
+  campo_senha: senha
+  roles: admin, vendedor, cliente
+```
+
+### Com WhatsApp + Email
+
+```
+integracoes
+  whatsapp
+    quando criar pedido
+      enviar mensagem para telefone
+        texto "Pedido recebido! {prato} x{quantidade}"
+
+  email
+    servidor: "smtp.gmail.com"
+    porta: "587"
+    quando criar pedido
+      enviar email para cliente.email
+        assunto "Pedido confirmado"
+        texto "Ola {cliente}, seu pedido foi confirmado!"
+```
+
+### Com Banco de Dados
+
+```
+banco
+  driver: postgres
+  host: "localhost"
+  porta: "5432"
+  nome: "minha_loja"
+  usuario: "postgres"
+  senha: "minhasenha"
+```
+
+### Projeto Modular
+
+```
 sistema restaurante
 
 importar "tema.fg"
@@ -384,16 +311,97 @@ importar "regras.fg"
 
 ---
 
-## Comandos CLI
+## Tipos de Dados
+
+| Tipo PT | Tipo EN | Descricao | Input HTML |
+|---------|---------|-----------|------------|
+| `texto` | `text` | Texto simples | text |
+| `texto_longo` | `long_text` | Texto longo | textarea |
+| `numero` | `number` | Numero | number |
+| `dinheiro` | `money` | Valor R$ | number |
+| `email` | `email` | Com validacao | email |
+| `telefone` | `phone` | Com validacao | tel |
+| `status` | `status` | Badge colorido | text |
+| `data` | `date` | Data | date |
+| `booleano` | `boolean` | Sim/Nao | checkbox |
+| `senha` | `password` | Mascarado + bcrypt | password |
+| `imagem` | `image` | Upload | file |
+| `arquivo` | `file` | Upload | file |
+| `link` | `link` | URL | url |
+
+## Modificadores
+
+| PT | EN | Efeito |
+|----|----|--------|
+| `obrigatorio` | `required` | NOT NULL + validacao |
+| `unico` | `unique` | UNIQUE constraint |
+| `pertence_a` | `belongs_to` | Foreign key |
+| `indice` | `index` | CREATE INDEX |
+| `soft_delete` | `soft_delete` | Exclusao logica |
+
+## Status Badges
+
+Campos `status` ganham badges automaticos:
+
+| Cor | Valores |
+|-----|---------|
+| Verde | ativo, livre, pronto, entregue, pago, aprovado |
+| Amarelo | pendente, aguardando, preparando, reservado |
+| Vermelho | inativo, ocupado, cancelado, bloqueado |
+| Azul | outros |
+
+---
+
+## API REST
+
+Cada modelo gera automaticamente:
+
+| Metodo | Rota | Acao |
+|--------|------|------|
+| `GET` | `/api/{modelo}` | Listar (com paginacao, filtros, busca) |
+| `GET` | `/api/{modelo}/{id}` | Buscar por ID |
+| `POST` | `/api/{modelo}` | Criar |
+| `PUT` | `/api/{modelo}/{id}` | Atualizar |
+| `DELETE` | `/api/{modelo}/{id}` | Deletar (ou soft delete) |
+
+### Query Parameters
+
+```
+?pagina=1&limite=10          # Paginacao
+?busca=texto                 # Busca full-text
+?status=ativo                # Filtro por campo
+?ordenar=preco&ordem=ASC     # Ordenacao
+```
+
+### Endpoints Especiais
+
+| Rota | Descricao |
+|------|-----------|
+| `/api/login` | Login (JWT) |
+| `/api/registro` | Registro |
+| `/api/me` | Usuario atual |
+| `/api/_stats` | Estatisticas |
+| `/api/_eval` | Executar codigo Flang |
+| `/api/_log` | Logs do mostrar/print |
+| `/api/{modelo}/export/csv` | Exportar CSV |
+| `/api/{modelo}/export/json` | Exportar JSON |
+| `/upload` | Upload de arquivos |
+| `/health` | Health check |
+| `/ws` | WebSocket |
+
+---
+
+## CLI
 
 | Comando | Descricao |
 |---------|-----------|
-| `flang run <arquivo.fg>` | Executa o arquivo .fg |
-| `flang <arquivo.fg>` | Atalho para run |
-| `flang run <arquivo.fg> <porta>` | Executa na porta especificada |
-| `flang check <arquivo.fg>` | Verifica sintaxe sem executar |
-| `flang new <nome>` | Cria novo projeto |
-| `flang version` | Mostra versao |
+| `flang run arquivo.fg` | Executa |
+| `flang arquivo.fg` | Atalho para run |
+| `flang check arquivo.fg` | Verifica sintaxe |
+| `flang new nome` | Novo projeto |
+| `flang init nome` | Projeto com .env, Docker |
+| `flang docker` | Gera Dockerfile |
+| `flang version` | Versao |
 | `flang help` | Ajuda |
 
 ---
@@ -404,89 +412,125 @@ importar "regras.fg"
 arquivo.fg
     |
     v
- [Lexer] --> tokens
+ [Lexer] ──> tokens (150+ keywords PT/EN)
     |
     v
- [Parser] --> AST
+ [Parser] ──> AST
     |
     v
  [Runtime]
-    |-- [Banco]      SQLite / MySQL / PostgreSQL
-    |-- [Servidor]   HTTP + WebSocket
-    |-- [Renderer]   HTML/CSS/JS dinamico
-    |-- [WhatsApp]   whatsmeow
-    |-- [Validador]  Regras de negocio
+    |── [Interpreter]  Variaveis, funcoes, loops, if/else
+    |── [Banco]        SQLite / MySQL / PostgreSQL
+    |── [Servidor]     HTTP + WebSocket + REST API
+    |── [Renderer]     HTML/CSS/JS dinamico (glassmorphism, dark mode)
+    |── [Auth]         JWT + bcrypt + roles
+    |── [WhatsApp]     whatsmeow
+    |── [Email]        SMTP
+    |── [Cron]         Agendamentos
+    └── [HTTP Client]  APIs externas
 ```
 
 ```
 flang/
-  main.go                          # Entry point
-  cli/                             # CLI (run, check, new, help)
-  compiler/
-    lexer/                         # Tokenizador bilingue
-    parser/                        # Parser -> AST
-    ast/                           # Estruturas do AST
-  runtime/
-    engine.go                      # Motor principal + imports
-    banco/                         # SQLite, MySQL, PostgreSQL
-    servidor/                      # HTTP + WebSocket + Renderer
-    whatsapp/                      # WhatsApp via whatsmeow
-  exemplos/
-    restaurante-modular/           # Exemplo com imports
-    restaurante-whatsapp/          # Exemplo com WhatsApp
-    english/                       # Exemplo em ingles
-    mixed/                         # Exemplo bilingue
+├── main.go
+├── cli/                     # CLI
+├── compiler/
+│   ├── lexer/               # Tokenizador bilingue
+│   ├── parser/              # Parser -> AST
+│   └── ast/                 # AST nodes
+├── runtime/
+│   ├── interpreter/         # Motor de scripting
+│   ├── auth/                # JWT + bcrypt
+│   ├── banco/               # SQLite, MySQL, PostgreSQL
+│   ├── servidor/            # HTTP + WebSocket + Renderer
+│   ├── whatsapp/            # WhatsApp
+│   ├── email/               # SMTP
+│   ├── cron/                # Agendamentos
+│   └── httpclient/          # HTTP client
+├── installer/               # Windows .exe + Linux .sh
+├── vscode-flang/            # VS Code extension
+├── docs/                    # Documentacao completa
+└── exemplos/                # Exemplos prontos
 ```
+
+---
+
+## Documentacao
+
+| Documento | Descricao |
+|-----------|-----------|
+| [Tutorial](docs/TUTORIAL.md) | Aprenda Flang do zero (16 capitulos) |
+| [Especificacao](docs/SPEC.md) | Gramática formal, todos os keywords |
+| [API Reference](docs/API.md) | Todos os endpoints REST |
+| [Seguranca](docs/SECURITY.md) | Auth, JWT, XSS, SQL injection |
+| [Integracoes](docs/INTEGRATIONS.md) | WhatsApp, Email, Cron |
+| [Deploy](docs/DEPLOY.md) | Docker, Nginx, PostgreSQL, systemd |
+| [Exemplos](docs/EXAMPLES.md) | 10 projetos completos |
+| [Cheatsheet](docs/CHEATSHEET.md) | Referencia rapida |
+| [FAQ](docs/FAQ.md) | 34 perguntas frequentes |
+| [Changelog](docs/CHANGELOG.md) | Historico de versoes |
 
 ---
 
 ## Comparacao
 
-| Feature | Flang | Low-Code Tools | Codigo Manual |
-|---------|-------|----------------|---------------|
-| Tempo para CRUD | Segundos | Minutos | Horas/Dias |
-| Linguagem propria | .fg | Visual/Drag | JS/Python/etc |
-| Backend + Frontend | Automatico | Parcial | Manual |
-| Banco de dados | 3 drivers | Limitado | Manual |
+| | Flang | Low-Code | Manual |
+|-|-------|----------|--------|
+| Tempo CRUD | Segundos | Minutos | Dias |
+| Backend + Frontend | 1 arquivo | Parcial | Separado |
+| Logica real | Sim | Limitado | Sim |
+| 3 bancos de dados | Sim | Depende | Manual |
 | WebSocket | Automatico | Plugin | Manual |
 | WhatsApp | 3 linhas | Nao | Complexo |
-| Self-hosted | Sim | Depende | Sim |
-| Open source | Sim | Nem sempre | - |
+| Auth JWT | 4 linhas | Config | Manual |
+| Export CSV | Automatico | Depende | Manual |
 | Bilingue PT/EN | Sim | Nao | Nao |
+| Open source | MIT | Nem sempre | - |
+| Self-hosted | Sim | Depende | Sim |
 
 ---
 
 ## Roadmap
 
-- [ ] Autenticacao (login/registro)
-- [ ] Upload de arquivos
-- [ ] Graficos e charts no dashboard
-- [ ] Deploy com Docker
-- [ ] Flang Cloud (deploy com 1 comando)
-- [ ] Mais integracoes (Telegram, Email, SMS)
+- [ ] Graficos/Charts interativos
+- [ ] OAuth2 (Google, GitHub login)
+- [ ] Pagamentos (Stripe, MercadoPago, PIX)
 - [ ] Editor visual para .fg
-- [ ] Flang escrito em Flang (self-hosting)
+- [ ] Flang Cloud (deploy 1 comando)
+- [ ] Mais integracoes (Telegram, SMS, Slack)
+- [ ] PWA (Progressive Web App)
+- [ ] GraphQL
+- [ ] Flang escrito em Flang
 
 ---
 
 ## Contribuir
 
-Contribuicoes sao bem-vindas!
+```bash
+git clone https://github.com/flaviokalleu/flang.git
+cd flang
+go build -o flang .
+./flang run exemplos/loja-completa/inicio.fg
+```
 
-1. Fork o repositorio
-2. Crie sua branch (`git checkout -b feature/minha-feature`)
-3. Commit (`git commit -m 'Add: minha feature'`)
-4. Push (`git push origin feature/minha-feature`)
-5. Abra um Pull Request
+1. Fork
+2. Branch (`git checkout -b feature/nova-feature`)
+3. Commit (`git commit -m 'Add: nova feature'`)
+4. Push (`git push origin feature/nova-feature`)
+5. Pull Request
 
 ---
 
 ## Licenca
 
-MIT License - veja [LICENSE](LICENSE) para detalhes.
+MIT License — veja [LICENSE](LICENSE)
 
 ---
 
 <p align="center">
-  Feito com Go por <a href="https://github.com/flaviokalleu">@flaviokalleu</a>
+  <img src="logo.png" alt="Flang" width="120">
+  <br>
+  <strong>Flang</strong> — Descreva. Programe. Execute.
+  <br>
+  <sub>Feito por <a href="https://github.com/flaviokalleu">@flaviokalleu</a></sub>
 </p>
