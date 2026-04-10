@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/flavio/flang/compiler/ast"
@@ -34,11 +35,16 @@ type Servidor struct {
 	Email       *emailpkg.Client
 	HTTPClient  *httpclient.Client
 	Interpreter *interp.Interpreter
+	rateLimiter map[string][]time.Time
+	rateMu      sync.Mutex
 }
 
 // Novo creates a new server.
 func Novo(program *ast.Program, db *banco.Banco, porta string) *Servidor {
-	return &Servidor{Program: program, DB: db, Porta: porta, WS: NewWSHub()}
+	return &Servidor{
+		Program: program, DB: db, Porta: porta, WS: NewWSHub(),
+		rateLimiter: make(map[string][]time.Time),
+	}
 }
 
 // Iniciar starts the HTTP server.
@@ -90,9 +96,31 @@ func (s *Servidor) middleware(next http.Handler) http.Handler {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusOK)
+				return
+			}
+		}
+
+		// Rate limiting for POST requests to API
+		if strings.HasPrefix(r.URL.Path, "/api/") && r.Method == http.MethodPost {
+			ip := r.RemoteAddr
+			s.rateMu.Lock()
+			now := time.Now()
+			// Clean old entries
+			var recent []time.Time
+			for _, t := range s.rateLimiter[ip] {
+				if now.Sub(t) < time.Minute {
+					recent = append(recent, t)
+				}
+			}
+			s.rateLimiter[ip] = append(recent, now)
+			count := len(s.rateLimiter[ip])
+			s.rateMu.Unlock()
+			if count > 100 { // 100 POST requests per minute
+				w.WriteHeader(http.StatusTooManyRequests)
+				w.Write([]byte(`{"erro":"Muitas requisições. Tente novamente em breve."}`))
 				return
 			}
 		}
@@ -219,6 +247,19 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Role-based access control for write operations
+	if r.Method != http.MethodGet && s.Auth != nil {
+		for _, screen := range s.Program.Screens {
+			if strings.ToLower(screen.Name) == modelo || screenMatchesModel(screen, modelo) {
+				if screen.Requires != "" && !s.Auth.CheckRole(r, screen.Requires) {
+					s.jsonError(w, "Permissão negada", http.StatusForbidden)
+					return
+				}
+				break
+			}
+		}
+	}
+
 	// Handle /api/{model}/export/csv and /api/{model}/export/json
 	if len(parts) >= 2 && parts[1] == "export" {
 		format := "json"
@@ -237,6 +278,23 @@ func (s *Servidor) handleAPI(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.handleRestaurar(w, r, modelo, id)
+		return
+	}
+
+	// Handle /api/{model}/{id}/{relation} - relationship expansion
+	if len(parts) == 3 && parts[2] != "restaurar" && parts[2] != "export" {
+		id, err := strconv.ParseInt(parts[1], 10, 64)
+		if err != nil {
+			s.jsonError(w, "ID inválido", http.StatusBadRequest)
+			return
+		}
+		relacao := parts[2]
+		items, err := s.DB.BuscarRelacionados(modelo, id, relacao)
+		if err != nil {
+			s.jsonError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		s.jsonOK(w, items)
 		return
 	}
 
@@ -663,6 +721,16 @@ func (s *Servidor) handleExport(w http.ResponseWriter, r *http.Request, modelo s
 		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 		json.NewEncoder(w).Encode(items)
 	}
+}
+
+// screenMatchesModel checks if a screen references the given model via a list component.
+func screenMatchesModel(screen *ast.Screen, modelo string) bool {
+	for _, comp := range screen.Components {
+		if comp.Type == ast.CompList && strings.ToLower(comp.Target) == modelo {
+			return true
+		}
+	}
+	return false
 }
 
 // handleRestaurar restores a soft-deleted record.

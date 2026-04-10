@@ -153,6 +153,9 @@ func Executar(arquivo string, porta string) error {
 			program.Auth.PassField, program.Auth.JWTSecret,
 		)
 		authHandler.SetupTable()
+		if len(program.Auth.Roles) > 0 {
+			authHandler.Roles = program.Auth.Roles
+		}
 		fmt.Println("[flang] Auth: ativado")
 	}
 
@@ -194,6 +197,7 @@ func Executar(arquivo string, porta string) error {
 
 	// Interpreter / Scripting Engine
 	interpreter := interp.New(db)
+	interpreter.HTTPClient = httpClient
 	srv.Interpreter = interpreter
 
 	// Register functions and execute top-level scripts
@@ -211,6 +215,10 @@ func Executar(arquivo string, porta string) error {
 	}
 
 	fmt.Printf("\n[flang] %s rodando em http://localhost:%s\n\n", program.System.Name, porta)
+
+	// Hot reload
+	WatchFiles(baseDir, arquivo, porta)
+
 	return srv.Iniciar()
 }
 

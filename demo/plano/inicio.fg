@@ -1,9 +1,6 @@
 sistema loja
 
-tema
-  cor primaria "#6366f1"
-  cor secundaria "#8b5cf6"
-  cor destaque "#f59e0b"
+tema moderno escuro
 
 autenticacao
   modelo: usuario
@@ -22,11 +19,15 @@ dados
 
   produto
     nome: texto obrigatorio
-    descricao: texto
+    descricao: texto_longo
     preco: dinheiro
     estoque: numero
-    categoria: texto
+    categoria: texto pertence_a categoria
     status: status
+
+  categoria
+    nome: texto obrigatorio
+    descricao: texto
 
   cliente
     nome: texto obrigatorio
@@ -36,12 +37,12 @@ dados
     status: status
 
   venda
-    cliente: texto obrigatorio
-    produto: texto obrigatorio
+    cliente: texto pertence_a cliente
+    produto: texto pertence_a produto
     quantidade: numero
     valor: dinheiro
     data: data
-    status: status
+    status: enum(pendente, pago, enviado, entregue)
 
 telas
 
@@ -51,7 +52,6 @@ telas
       mostrar nome
       mostrar preco
       mostrar estoque
-      mostrar categoria
       mostrar status
     botao azul
       texto "Novo Produto"
@@ -62,7 +62,6 @@ telas
       mostrar nome
       mostrar email
       mostrar telefone
-      mostrar cidade
       mostrar status
     botao verde
       texto "Novo Cliente"
@@ -72,15 +71,14 @@ telas
     lista venda
       mostrar cliente
       mostrar produto
-      mostrar quantidade
       mostrar valor
-      mostrar data
       mostrar status
     botao azul
       texto "Nova Venda"
 
   tela equipe
     titulo "Equipe"
+    requer admin
     lista usuario
       mostrar nome
       mostrar email
@@ -105,9 +103,7 @@ eventos
 
 logica
 
-  definir versao = "1.0.0"
-
   funcao calcular_total(preco, quantidade)
     retornar preco * quantidade
 
-  mostrar "Loja Flang v" + versao
+  mostrar "Loja rodando!"

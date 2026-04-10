@@ -70,12 +70,19 @@ func (i *Import) NodeType() string { return "Import" }
 // ==================== Theme ====================
 
 type Theme struct {
-	Primary   string
-	Secondary string
-	Accent    string
-	Dark      bool
-	Sidebar   string
-	Icon      string
+	Primary    string
+	Secondary  string
+	Accent     string
+	Dark       bool
+	Sidebar    string
+	Icon       string
+	Font       string // custom font family
+	Radius     string // border radius (e.g. "12px")
+	Background string // custom background color
+	CardBg     string // card background
+	TextColor  string // text color
+	Style      string // "glassmorphism", "flat", "neumorphism", "minimal"
+	CustomCSS  string // raw CSS injection from user
 }
 
 func (t *Theme) NodeType() string { return "Theme" }
@@ -84,7 +91,77 @@ func DefaultTheme() *Theme {
 	return &Theme{
 		Primary: "#6366f1", Secondary: "#8b5cf6",
 		Accent: "#f59e0b", Sidebar: "#1e1b4b",
+		Font: "Inter", Radius: "12px", Style: "glassmorphism",
+		Background: "#0f0b2d", CardBg: "rgba(255,255,255,0.05)",
+		TextColor: "#e2e8f0",
 	}
+}
+
+// ColorName maps color names (PT/EN) to hex values.
+var ColorName = map[string]string{
+	// PT
+	"azul": "#3b82f6", "verde": "#22c55e", "vermelho": "#ef4444",
+	"roxo": "#8b5cf6", "laranja": "#f97316", "rosa": "#ec4899",
+	"amarelo": "#eab308", "ciano": "#06b6d4", "indigo": "#6366f1",
+	"cinza": "#6b7280", "branco": "#ffffff", "preto": "#000000",
+	"esmeralda": "#10b981", "ambar": "#f59e0b", "violeta": "#7c3aed",
+	// EN
+	"blue": "#3b82f6", "green": "#22c55e", "red": "#ef4444",
+	"purple": "#8b5cf6", "orange": "#f97316", "pink": "#ec4899",
+	"yellow": "#eab308", "cyan": "#06b6d4", "gray": "#6b7280",
+	"white": "#ffffff", "black": "#000000", "emerald": "#10b981",
+	"amber": "#f59e0b", "violet": "#7c3aed",
+}
+
+// ThemePreset applies a named preset to a theme.
+func ThemePreset(name string) *Theme {
+	switch name {
+	case "moderno", "modern":
+		return &Theme{
+			Primary: "#6366f1", Secondary: "#8b5cf6", Accent: "#f59e0b",
+			Sidebar: "#1e1b4b", Font: "Inter", Radius: "12px",
+			Style: "glassmorphism", Background: "#0f0b2d",
+			CardBg: "rgba(255,255,255,0.05)", TextColor: "#e2e8f0", Dark: true,
+		}
+	case "claro", "light":
+		return &Theme{
+			Primary: "#3b82f6", Secondary: "#6366f1", Accent: "#f59e0b",
+			Sidebar: "#1e293b", Font: "Inter", Radius: "8px",
+			Style: "flat", Background: "#f8fafc",
+			CardBg: "#ffffff", TextColor: "#1e293b", Dark: false,
+		}
+	case "simples", "simple":
+		return &Theme{
+			Primary: "#2563eb", Secondary: "#4f46e5", Accent: "#059669",
+			Sidebar: "#111827", Font: "system-ui", Radius: "6px",
+			Style: "minimal", Background: "#ffffff",
+			CardBg: "#f9fafb", TextColor: "#111827", Dark: false,
+		}
+	case "elegante", "elegant":
+		return &Theme{
+			Primary: "#7c3aed", Secondary: "#6d28d9", Accent: "#c084fc",
+			Sidebar: "#0f0720", Font: "Inter", Radius: "16px",
+			Style: "neumorphism", Background: "#1a1025",
+			CardBg: "rgba(255,255,255,0.03)", TextColor: "#e8e0f0", Dark: true,
+		}
+	case "corporativo", "corporate":
+		return &Theme{
+			Primary: "#0f766e", Secondary: "#115e59", Accent: "#f59e0b",
+			Sidebar: "#1e293b", Font: "Inter", Radius: "4px",
+			Style: "flat", Background: "#f1f5f9",
+			CardBg: "#ffffff", TextColor: "#334155", Dark: false,
+		}
+	default:
+		return DefaultTheme()
+	}
+}
+
+// ResolveColor converts a color name to hex, or returns the value as-is if already hex.
+func ResolveColor(val string) string {
+	if hex, ok := ColorName[val]; ok {
+		return hex
+	}
+	return val
 }
 
 // ==================== Database ====================
@@ -145,7 +222,9 @@ type Model struct {
 	Icon       string
 	Fields     []*Field
 	SoftDelete bool
-	IsAuth     bool // is this the auth user model?
+	IsAuth     bool     // is this the auth user model?
+	HasMany    []string // model names for 1:N relationships
+	ManyToMany []string // model names for N:N relationships
 }
 
 func (m *Model) NodeType() string { return "Model" }
@@ -314,6 +393,7 @@ type Expression struct {
 	Object   string       // for field access (object.field)
 	Field    string
 	Elements []*Expression // for list literals
+	Index    *Expression  // for array[index] access
 }
 
 func (e *Expression) NodeType() string { return "Expression" }

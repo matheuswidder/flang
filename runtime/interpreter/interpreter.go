@@ -72,11 +72,12 @@ func (s *Scope) SetLocal(name string, value interface{}) {
 
 // Interpreter executes Flang AST scripts.
 type Interpreter struct {
-	Global    *Scope
-	Functions map[string]*ast.FuncDecl
-	DB        *banco.Banco
-	LogBuffer []string
-	logMu     sync.Mutex
+	Global     *Scope
+	Functions  map[string]*ast.FuncDecl
+	DB         *banco.Banco
+	LogBuffer  []string
+	logMu      sync.Mutex
+	HTTPClient interface{ Chamar(method, url string, body []byte) ([]byte, error) }
 }
 
 // New creates a new interpreter.
@@ -587,6 +588,33 @@ func (interp *Interpreter) EvalExpr(expr *ast.Expression, scope *Scope) interfac
 			result[i] = interp.EvalExpr(elem, scope)
 		}
 		return result
+
+	case "index":
+		// Array indexing: arr[0] or obj.field[0]
+		var collection interface{}
+		if expr.Object != "" && expr.Field != "" {
+			// obj.field[index]
+			if obj, ok := scope.Get(expr.Object); ok {
+				if m, ok := obj.(map[string]interface{}); ok {
+					collection = m[expr.Field]
+				}
+			}
+		} else {
+			// name[index]
+			collection, _ = scope.Get(expr.Name)
+		}
+		idx := int(toNumber(interp.EvalExpr(expr.Index, scope)))
+		switch arr := collection.(type) {
+		case []interface{}:
+			if idx >= 0 && idx < len(arr) {
+				return arr[idx]
+			}
+		case string:
+			if idx >= 0 && idx < len(arr) {
+				return string(arr[idx])
+			}
+		}
+		return nil
 	}
 
 	return nil
@@ -789,6 +817,189 @@ func (interp *Interpreter) callBuiltin(name string, args []interface{}) (interfa
 			return float64(0), true
 		}
 		return math.Floor(toNumber(args[0])), true
+
+	case "substituir", "replace":
+		if len(args) < 3 {
+			return "", true
+		}
+		return strings.ReplaceAll(toString(args[0]), toString(args[1]), toString(args[2])), true
+
+	case "cortar", "trim":
+		if len(args) < 1 {
+			return "", true
+		}
+		return strings.TrimSpace(toString(args[0])), true
+
+	case "comeca_com", "starts_with":
+		if len(args) < 2 {
+			return false, true
+		}
+		return strings.HasPrefix(toString(args[0]), toString(args[1])), true
+
+	case "termina_com", "ends_with":
+		if len(args) < 2 {
+			return false, true
+		}
+		return strings.HasSuffix(toString(args[0]), toString(args[1])), true
+
+	case "substring", "substr", "fatiar":
+		if len(args) < 2 {
+			return "", true
+		}
+		s := toString(args[0])
+		start := int(toNumber(args[1]))
+		if start < 0 {
+			start = 0
+		}
+		if start >= len(s) {
+			return "", true
+		}
+		if len(args) >= 3 {
+			end := int(toNumber(args[2]))
+			if end > len(s) {
+				end = len(s)
+			}
+			return s[start:end], true
+		}
+		return s[start:], true
+
+	case "adicionar", "push", "append":
+		if len(args) < 2 {
+			return args, true
+		}
+		if arr, ok := args[0].([]interface{}); ok {
+			return append(arr, args[1]), true
+		}
+		return []interface{}{args[0], args[1]}, true
+
+	case "remover", "pop":
+		if len(args) < 1 {
+			return nil, true
+		}
+		if arr, ok := args[0].([]interface{}); ok && len(arr) > 0 {
+			return arr[:len(arr)-1], true
+		}
+		return args[0], true
+
+	case "reverter", "reverse":
+		if len(args) < 1 {
+			return nil, true
+		}
+		if arr, ok := args[0].([]interface{}); ok {
+			result := make([]interface{}, len(arr))
+			for i, v := range arr {
+				result[len(arr)-1-i] = v
+			}
+			return result, true
+		}
+		if s, ok := args[0].(string); ok {
+			runes := []rune(s)
+			for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+				runes[i], runes[j] = runes[j], runes[i]
+			}
+			return string(runes), true
+		}
+		return nil, true
+
+	case "chaves", "keys":
+		if len(args) < 1 {
+			return []interface{}{}, true
+		}
+		if m, ok := args[0].(map[string]interface{}); ok {
+			keys := make([]interface{}, 0, len(m))
+			for k := range m {
+				keys = append(keys, k)
+			}
+			return keys, true
+		}
+		return []interface{}{}, true
+
+	case "valores", "values":
+		if len(args) < 1 {
+			return []interface{}{}, true
+		}
+		if m, ok := args[0].(map[string]interface{}); ok {
+			vals := make([]interface{}, 0, len(m))
+			for _, v := range m {
+				vals = append(vals, v)
+			}
+			return vals, true
+		}
+		return []interface{}{}, true
+
+	case "json":
+		if len(args) < 1 {
+			return "", true
+		}
+		if s, ok := args[0].(string); ok {
+			var result interface{}
+			if err := json.Unmarshal([]byte(s), &result); err != nil {
+				return nil, true
+			}
+			return result, true
+		}
+		data, _ := json.Marshal(args[0])
+		return string(data), true
+
+	case "formato_data", "format_date":
+		if len(args) < 1 {
+			return "", true
+		}
+		t, err := time.Parse(time.RFC3339, toString(args[0]))
+		if err != nil {
+			return toString(args[0]), true
+		}
+		if len(args) >= 2 {
+			format := toString(args[1])
+			// Simple format mapping
+			format = strings.ReplaceAll(format, "DD", "02")
+			format = strings.ReplaceAll(format, "MM", "01")
+			format = strings.ReplaceAll(format, "YYYY", "2006")
+			format = strings.ReplaceAll(format, "HH", "15")
+			format = strings.ReplaceAll(format, "mm", "04")
+			format = strings.ReplaceAll(format, "ss", "05")
+			return t.Format(format), true
+		}
+		return t.Format("02/01/2006"), true
+
+	case "potencia", "pow", "power":
+		if len(args) < 2 {
+			return float64(0), true
+		}
+		return math.Pow(toNumber(args[0]), toNumber(args[1])), true
+
+	case "raiz", "sqrt":
+		if len(args) < 1 {
+			return float64(0), true
+		}
+		return math.Sqrt(toNumber(args[0])), true
+
+	case "chamar", "call", "http":
+		if len(args) < 1 {
+			return nil, true
+		}
+		url := toString(args[0])
+		method := "GET"
+		if len(args) >= 2 {
+			method = strings.ToUpper(toString(args[1]))
+		}
+		var body []byte
+		if len(args) >= 3 {
+			body = []byte(toString(args[2]))
+		}
+		if interp.HTTPClient != nil {
+			resp, err := interp.HTTPClient.Chamar(method, url, body)
+			if err != nil {
+				interp.AppendLog(fmt.Sprintf("ERRO HTTP: %s", err))
+				return nil, true
+			}
+			var result interface{}
+			if json.Unmarshal(resp, &result) == nil {
+				return result, true
+			}
+			return string(resp), true
+		}
+		return nil, true
 	}
 
 	return nil, false

@@ -230,6 +230,24 @@ func (p *Parser) parseModel() (*ast.Model, error) {
 			continue
 		}
 
+		// Relationship keywords at model level
+		if tok.Type == lexer.TokenTemMuitos {
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+				model.HasMany = append(model.HasMany, p.advance().Value)
+			}
+			continue
+		}
+		if tok.Type == lexer.TokenMuitosParaMuitos {
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+				model.ManyToMany = append(model.ManyToMany, p.advance().Value)
+			}
+			continue
+		}
+
 		// Any name token: check if it's a field (followed by colon) or a new model
 		if p.isNameToken(tok) {
 			if p.peekNextMeaningful().Type == lexer.TokenColon {
@@ -311,6 +329,23 @@ func (p *Parser) parseField() (*ast.Field, error) {
 			p.skipIndent()
 			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
 				field.Reference = p.advance().Value
+			}
+		case lexer.TokenLParen:
+			// Parse enum values: enum(ativo, inativo, pendente)
+			p.advance() // consume '('
+			for !p.isAtEnd() && p.current().Type != lexer.TokenRParen {
+				if p.current().Type == lexer.TokenComma || p.current().Type == lexer.TokenIndent {
+					p.advance()
+					continue
+				}
+				if p.current().Type == lexer.TokenString {
+					field.EnumValues = append(field.EnumValues, p.advance().Value)
+				} else if p.current().Type != lexer.TokenRParen {
+					field.EnumValues = append(field.EnumValues, p.advance().Value)
+				}
+			}
+			if p.current().Type == lexer.TokenRParen {
+				p.advance()
 			}
 		default:
 			p.advance()
@@ -441,6 +476,91 @@ func (p *Parser) parseScreen() (*ast.Screen, error) {
 		case lexer.TokenMostrar:
 			comp := p.parseShowComponent()
 			screen.Components = append(screen.Components, comp)
+		case lexer.TokenGrafico:
+			comp := &ast.Component{
+				Type:       ast.CompChart,
+				Properties: make(map[string]string),
+			}
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && (p.current().Type == lexer.TokenIdentifier || lexer.IsTypeKeyword(p.current().Type)) {
+				comp.Target = p.advance().Value
+			}
+			// Parse chart properties on following lines
+			p.skipWhitespace()
+			for !p.isAtEnd() && !p.isBlockKeyword() && p.current().Type != lexer.TokenTela {
+				tok2 := p.current()
+				if tok2.Type == lexer.TokenNewline || tok2.Type == lexer.TokenIndent {
+					p.advance()
+					continue
+				}
+				if tok2.Value == "tipo" || tok2.Value == "type" {
+					p.advance()
+					p.skipIndent()
+					if p.current().Type == lexer.TokenString || p.current().Type == lexer.TokenIdentifier {
+						comp.Properties["chart_type"] = p.advance().Value
+					}
+					continue
+				}
+				break
+			}
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenBusca:
+			comp := &ast.Component{
+				Type:       ast.CompSearch,
+				Properties: make(map[string]string),
+			}
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenIdentifier {
+				comp.Target = p.advance().Value
+			}
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenSelecionar:
+			comp := &ast.Component{
+				Type:       ast.CompSelect,
+				Properties: make(map[string]string),
+			}
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenIdentifier {
+				comp.Target = p.advance().Value
+			}
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenAreaTexto:
+			comp := &ast.Component{
+				Type:       ast.CompTextarea,
+				Properties: make(map[string]string),
+			}
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type == lexer.TokenIdentifier {
+				comp.Target = p.advance().Value
+			}
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenDashboard:
+			comp := &ast.Component{
+				Type:       "dashboard",
+				Properties: make(map[string]string),
+			}
+			p.advance()
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenTabela:
+			comp, err := p.parseListComponent()
+			if err != nil {
+				return nil, err
+			}
+			comp.Type = "tabela"
+			screen.Components = append(screen.Components, comp)
+		case lexer.TokenRequer:
+			p.advance()
+			p.skipIndent()
+			if !p.isAtEnd() && p.current().Type != lexer.TokenNewline {
+				screen.Requires = p.advance().Value
+			}
+		case lexer.TokenPublico:
+			p.advance()
+			screen.Public = true
 		default:
 			p.advance()
 		}
@@ -619,12 +739,66 @@ func (p *Parser) parseAcoes() error {
 	return nil
 }
 
+// parseTemaValue reads a string or identifier and resolves color names.
+func (p *Parser) parseTemaValue() string {
+	if p.current().Type == lexer.TokenString {
+		return p.advance().Value
+	}
+	if p.current().Type == lexer.TokenIdentifier || p.isNameToken(p.current()) {
+		return ast.ResolveColor(p.advance().Value)
+	}
+	return ""
+}
+
 // parseTema parses the theme block.
+// Supports: tema moderno escuro     (preset + modifier)
+//           tema azul               (color preset)
+//           tema                    (block with properties)
 func (p *Parser) parseTema() error {
 	p.advance() // consume 'tema'
-	p.skipWhitespace()
+	p.skipIndent()
 
 	theme := ast.DefaultTheme()
+
+	// Check for inline preset: "tema moderno escuro" or "tema azul"
+	if !p.isAtEnd() && p.current().Type != lexer.TokenNewline && !p.isBlockKeyword() {
+		first := p.current()
+		if first.Type == lexer.TokenIdentifier || first.Type == lexer.TokenEscuro {
+			word := first.Value
+			// Check if it's a preset name
+			preset := ast.ThemePreset(word)
+			if word != "cor" && word != "fonte" && word != "estilo" && word != "fundo" &&
+				word != "borda" && word != "icone" && word != "cartao" && word != "css" &&
+				word != "texto_cor" && word != "card" && word != "raio" {
+				if _, isColor := ast.ColorName[word]; isColor {
+					// "tema azul" — apply color as primary
+					theme.Primary = ast.ResolveColor(word)
+					p.advance()
+				} else if word == "escuro" || word == "dark" {
+					theme.Dark = true
+					p.advance()
+				} else {
+					// It's a preset name: "tema moderno"
+					theme = preset
+					p.advance()
+				}
+				p.skipIndent()
+				// Check for second word: "tema moderno escuro" or "tema azul escuro"
+				if !p.isAtEnd() && p.current().Type != lexer.TokenNewline && !p.isBlockKeyword() {
+					second := p.current().Value
+					if second == "escuro" || second == "dark" {
+						theme.Dark = true
+						p.advance()
+					} else if _, isColor := ast.ColorName[second]; isColor {
+						theme.Primary = ast.ResolveColor(second)
+						p.advance()
+					}
+				}
+			}
+		}
+	}
+
+	p.skipWhitespace()
 
 	for !p.isAtEnd() && !p.isBlockKeyword() {
 		tok := p.current()
@@ -634,17 +808,15 @@ func (p *Parser) parseTema() error {
 			continue
 		}
 
-		// Parse key: value pairs or keywords
 		switch {
 		case tok.Value == "cor" || tok.Type == lexer.TokenCor:
 			p.advance()
 			p.skipIndent()
-			// cor primaria "#hex" / cor secundaria "#hex" etc
 			if p.current().Type == lexer.TokenIdentifier || p.current().Type == lexer.TokenCor {
 				which := p.advance().Value
 				p.skipIndent()
-				if p.current().Type == lexer.TokenString {
-					val := p.advance().Value
+				val := p.parseTemaValue()
+				if val != "" {
 					switch which {
 					case "primaria", "primary":
 						theme.Primary = val
@@ -656,17 +828,72 @@ func (p *Parser) parseTema() error {
 						theme.Sidebar = val
 					}
 				}
-			} else if p.current().Type == lexer.TokenString {
-				theme.Primary = p.advance().Value
+			} else {
+				val := p.parseTemaValue()
+				if val != "" {
+					theme.Primary = val
+				}
 			}
-		case tok.Value == "escuro" || tok.Type == lexer.TokenEscuro:
+		case tok.Value == "escuro" || tok.Value == "dark" || tok.Type == lexer.TokenEscuro:
 			p.advance()
 			theme.Dark = true
+		case tok.Value == "claro" || tok.Value == "light":
+			p.advance()
+			theme.Dark = false
 		case tok.Value == "icone" || tok.Type == lexer.TokenIcone:
 			p.advance()
 			p.skipIndent()
 			if p.current().Type == lexer.TokenString {
 				theme.Icon = p.advance().Value
+			}
+		case tok.Value == "fonte" || tok.Value == "font":
+			p.advance()
+			p.skipIndent()
+			val := p.parseTemaValue()
+			if val != "" {
+				theme.Font = val
+			}
+		case tok.Value == "borda" || tok.Value == "radius" || tok.Value == "raio":
+			p.advance()
+			p.skipIndent()
+			val := p.parseTemaValue()
+			if val != "" {
+				theme.Radius = val
+			}
+		case tok.Value == "fundo" || tok.Value == "background":
+			p.advance()
+			p.skipIndent()
+			val := p.parseTemaValue()
+			if val != "" {
+				theme.Background = val
+			}
+		case tok.Value == "card" || tok.Value == "cartao":
+			p.advance()
+			p.skipIndent()
+			val := p.parseTemaValue()
+			if val != "" {
+				theme.CardBg = val
+			}
+		case tok.Value == "texto_cor" || tok.Value == "text_color":
+			p.advance()
+			p.skipIndent()
+			val := p.parseTemaValue()
+			if val != "" {
+				theme.TextColor = val
+			}
+		case tok.Value == "estilo" || tok.Value == "style":
+			p.advance()
+			p.skipIndent()
+			if p.current().Type == lexer.TokenString {
+				theme.Style = p.advance().Value
+			} else if p.current().Type == lexer.TokenIdentifier || p.isNameToken(p.current()) {
+				theme.Style = p.advance().Value
+			}
+		case tok.Value == "css":
+			p.advance()
+			p.skipIndent()
+			if p.current().Type == lexer.TokenString {
+				theme.CustomCSS = p.advance().Value
 			}
 		default:
 			p.advance()
@@ -2447,6 +2674,25 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 			}, nil
 		}
 
+		// Check for array indexing: name[index]
+		if p.current().Type == lexer.TokenLBracket {
+			p.advance() // consume '['
+			p.skipIndent()
+			indexExpr, err := p.parseExpression()
+			if err != nil {
+				return nil, err
+			}
+			p.skipIndent()
+			if p.current().Type == lexer.TokenRBracket {
+				p.advance() // consume ']'
+			}
+			return &ast.Expression{
+				Type:  "index",
+				Name:  name,
+				Index: indexExpr,
+			}, nil
+		}
+
 		// Check for field access: name.field
 		if p.current().Type == lexer.TokenDot {
 			p.advance() // consume '.'
@@ -2465,6 +2711,26 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 					Name:   fieldName,
 					Object: name,
 					Args:   args,
+				}, nil
+			}
+
+			// Check for array index after field access: obj.field[0]
+			if p.current().Type == lexer.TokenLBracket {
+				p.advance()
+				p.skipIndent()
+				indexExpr, err := p.parseExpression()
+				if err != nil {
+					return nil, err
+				}
+				p.skipIndent()
+				if p.current().Type == lexer.TokenRBracket {
+					p.advance()
+				}
+				return &ast.Expression{
+					Type:   "index",
+					Object: name,
+					Field:  fieldName,
+					Index:  indexExpr,
 				}, nil
 			}
 
@@ -2493,6 +2759,21 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 				return &ast.Expression{Type: "call", Name: name, Args: args}, nil
 			}
 
+			// Check for array indexing: name[index]
+			if p.current().Type == lexer.TokenLBracket {
+				p.advance() // consume '['
+				p.skipIndent()
+				indexExpr, err := p.parseExpression()
+				if err != nil {
+					return nil, err
+				}
+				p.skipIndent()
+				if p.current().Type == lexer.TokenRBracket {
+					p.advance()
+				}
+				return &ast.Expression{Type: "index", Name: name, Index: indexExpr}, nil
+			}
+
 			// Check for field access: name.field
 			if p.current().Type == lexer.TokenDot {
 				p.advance()
@@ -2505,6 +2786,20 @@ func (p *Parser) parsePrimary() (*ast.Expression, error) {
 						return nil, err
 					}
 					return &ast.Expression{Type: "call", Name: fieldName, Object: name, Args: args}, nil
+				}
+				// Check for array index after field access: obj.field[0]
+				if p.current().Type == lexer.TokenLBracket {
+					p.advance()
+					p.skipIndent()
+					indexExpr, err := p.parseExpression()
+					if err != nil {
+						return nil, err
+					}
+					p.skipIndent()
+					if p.current().Type == lexer.TokenRBracket {
+						p.advance()
+					}
+					return &ast.Expression{Type: "index", Object: name, Field: fieldName, Index: indexExpr}, nil
 				}
 				return &ast.Expression{Type: "field_access", Object: name, Field: fieldName}, nil
 			}

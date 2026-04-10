@@ -3,15 +3,14 @@ package runtime
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 )
 
-// WatchFiles monitors .fg files for changes and calls reload func.
-func WatchFiles(dir string, onChange func()) {
+// WatchFiles monitors .fg files for changes and restarts the process.
+func WatchFiles(dir string, arquivo string, porta string) {
 	stamps := make(map[string]time.Time)
-
-	// Initial scan
 	scanFG(dir, stamps)
 
 	go func() {
@@ -26,7 +25,6 @@ func WatchFiles(dir string, onChange func()) {
 				if filepath.Ext(path) != ".fg" {
 					return nil
 				}
-
 				mod := info.ModTime()
 				if prev, ok := stamps[path]; ok {
 					if mod.After(prev) {
@@ -34,7 +32,6 @@ func WatchFiles(dir string, onChange func()) {
 						changed = true
 					}
 				} else {
-					// New file
 					changed = true
 				}
 				stamps[path] = mod
@@ -43,7 +40,17 @@ func WatchFiles(dir string, onChange func()) {
 
 			if changed {
 				fmt.Println("[flang] Recarregando...")
-				onChange()
+				// Re-exec the process
+				cmd := exec.Command(os.Args[0], "run", arquivo, porta)
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				cmd.Stdin = os.Stdin
+				if err := cmd.Start(); err != nil {
+					fmt.Printf("[flang] Erro ao recarregar: %s\n", err)
+					continue
+				}
+				// Exit the current process
+				os.Exit(0)
 			}
 		}
 	}()

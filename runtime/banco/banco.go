@@ -54,6 +54,37 @@ func Abrir(config *ast.DatabaseConfig, appName string, models []*ast.Model) (*Ba
 		fmt.Printf("[flang] Tabela: %s (%d campos)\n", m.Name, len(m.Fields))
 	}
 
+	// Create join tables for many-to-many relationships
+	for _, m := range models {
+		for _, related := range m.ManyToMany {
+			relLower := strings.ToLower(related)
+			mLower := strings.ToLower(m.Name)
+			// Sort names alphabetically for consistent table naming
+			name1, name2 := mLower, relLower
+			if name1 > name2 {
+				name1, name2 = name2, name1
+			}
+			joinTable := name1 + "_" + name2
+			// Check if already created
+			if _, exists := b.Models[joinTable]; exists {
+				continue
+			}
+			joinSQL := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+				%s INTEGER REFERENCES %s(%s) ON DELETE CASCADE,
+				%s INTEGER REFERENCES %s(%s) ON DELETE CASCADE,
+				PRIMARY KEY (%s, %s)
+			)`, q(joinTable),
+				q(mLower+"_id"), q(mLower), q("id"),
+				q(relLower+"_id"), q(relLower), q("id"),
+				q(mLower+"_id"), q(relLower+"_id"))
+			if _, err := b.DB.Exec(joinSQL); err != nil {
+				fmt.Printf("[flang] AVISO: erro ao criar tabela join '%s': %s\n", joinTable, err)
+			} else {
+				fmt.Printf("[flang] Tabela join: %s\n", joinTable)
+			}
+		}
+	}
+
 	return b, nil
 }
 
@@ -194,6 +225,20 @@ func (b *Banco) criarTabela(model *ast.Model) error {
 	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (\n  %s\n)", q(name), strings.Join(cols, ",\n  "))
 	if _, err := b.DB.Exec(query); err != nil {
 		return err
+	}
+
+	// After CREATE TABLE IF NOT EXISTS, add missing columns
+	for _, f := range model.Fields {
+		fname := strings.ToLower(f.Name)
+		sqlType := f.Type.SQLType()
+		if b.Driver == "mysql" && sqlType == "TEXT" {
+			sqlType = "VARCHAR(500)"
+		}
+		alterSQL := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", q(name), q(fname), sqlType)
+		if f.Default != "" {
+			alterSQL += fmt.Sprintf(" DEFAULT '%s'", f.Default)
+		}
+		b.DB.Exec(alterSQL) // ignore error if column already exists
 	}
 
 	// Create indexes for fields with Index: true
@@ -471,6 +516,44 @@ func (b *Banco) Contar(modelo string) (int64, error) {
 	}
 	err := b.DB.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s%s", q(modelo), whereSQL)).Scan(&count)
 	return count, err
+}
+
+// BuscarRelacionados returns related records for a model via foreign key.
+func (b *Banco) BuscarRelacionados(modelo string, id int64, relacao string) ([]map[string]any, error) {
+	relLower := strings.ToLower(relacao)
+	modelLower := strings.ToLower(modelo)
+
+	// Check if it's a has_many (FK on related table)
+	if relModel, ok := b.Models[relLower]; ok {
+		for _, f := range relModel.Fields {
+			if f.Reference == modelo || strings.ToLower(f.Reference) == modelLower {
+				query := fmt.Sprintf("SELECT * FROM %s WHERE %s = %s ORDER BY %s DESC",
+					q(relLower), q(strings.ToLower(f.Name)), b.ph(1), q("id"))
+				rows, err := b.DB.Query(query, id)
+				if err != nil {
+					return nil, err
+				}
+				defer rows.Close()
+				return scanRows(rows)
+			}
+		}
+	}
+
+	// Check if it's a many_to_many (join table)
+	name1, name2 := modelLower, relLower
+	if name1 > name2 {
+		name1, name2 = name2, name1
+	}
+	joinTable := name1 + "_" + name2
+
+	query := fmt.Sprintf("SELECT r.* FROM %s r INNER JOIN %s j ON r.%s = j.%s WHERE j.%s = %s",
+		q(relLower), q(joinTable), q("id"), q(relLower+"_id"), q(modelLower+"_id"), b.ph(1))
+	rows, err := b.DB.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanRows(rows)
 }
 
 // ContarPorStatus returns counts grouped by the status field for a model.

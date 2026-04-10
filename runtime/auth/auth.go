@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -16,22 +17,27 @@ import (
 
 // Auth handles authentication for Flang apps.
 type Auth struct {
-	DB         *sql.DB
-	Table      string // user table name
-	LoginField string // email, username, etc
-	PassField  string // password field
-	Secret     []byte
-	Roles      []string
+	DB            *sql.DB
+	Table         string // user table name
+	LoginField    string // email, username, etc
+	PassField     string // password field
+	Secret        []byte
+	Roles         []string
+	loginAttempts map[string]int
+	loginLockout  map[string]time.Time
+	rateMu        sync.Mutex
 }
 
 // Novo creates a new Auth handler.
 func Novo(db *sql.DB, table, loginField, passField, secret string) *Auth {
 	return &Auth{
-		DB:         db,
-		Table:      table,
-		LoginField: loginField,
-		PassField:  passField,
-		Secret:     []byte(secret),
+		DB:            db,
+		Table:         table,
+		LoginField:    loginField,
+		PassField:     passField,
+		Secret:        []byte(secret),
+		loginAttempts: make(map[string]int),
+		loginLockout:  make(map[string]time.Time),
 	}
 }
 
@@ -130,6 +136,15 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Rate limiting
+	a.rateMu.Lock()
+	if lockUntil, locked := a.loginLockout[login]; locked && time.Now().Before(lockUntil) {
+		a.rateMu.Unlock()
+		jsonErr(w, "Conta bloqueada. Tente novamente em 5 minutos.", 429)
+		return
+	}
+	a.rateMu.Unlock()
+
 	// Find user
 	var id int64
 	var storedHash, role string
@@ -150,8 +165,22 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(pass)); err != nil {
 		jsonErr(w, "Credenciais inválidas", 401)
+		// Track failed attempts
+		a.rateMu.Lock()
+		a.loginAttempts[login]++
+		if a.loginAttempts[login] >= 5 {
+			a.loginLockout[login] = time.Now().Add(5 * time.Minute)
+			a.loginAttempts[login] = 0
+		}
+		a.rateMu.Unlock()
 		return
 	}
+
+	// Clear failed attempts on success
+	a.rateMu.Lock()
+	delete(a.loginAttempts, login)
+	delete(a.loginLockout, login)
+	a.rateMu.Unlock()
 
 	token := a.gerarToken(id, login, role)
 
@@ -215,6 +244,21 @@ func (a *Auth) Middleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// CheckRole verifies if the user has the required role.
+func (a *Auth) CheckRole(r *http.Request, required string) bool {
+	if required == "" || required == "publico" || required == "public" {
+		return true
+	}
+	role := r.Header.Get("X-User-Role")
+	if role == "" {
+		return false
+	}
+	if role == "admin" {
+		return true // admin has access to everything
+	}
+	return role == required
 }
 
 // ==================== JWT (simple HMAC-SHA256) ====================
