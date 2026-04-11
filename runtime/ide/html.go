@@ -82,9 +82,9 @@ html,body{margin:0;height:100%;overflow:hidden}
     <button onclick="stopProject()" class="px-3 py-1.5 text-xs rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all flex items-center gap-1.5" title="Parar app">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><rect x="6" y="6" width="12" height="12"/></svg>Stop
     </button>
-    <a href="http://localhost:8080" target="_blank" class="px-3 py-1.5 text-xs rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all flex items-center gap-1.5" title="Abrir preview">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Preview
-    </a>
+    <button onclick="togglePreview()" id="btn-preview" class="px-3 py-1.5 text-xs rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 transition-all flex items-center gap-1.5" title="Preview ao vivo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Preview
+    </button>
   </div>
 </div>
 
@@ -165,6 +165,9 @@ html,body{margin:0;height:100%;overflow:hidden}
         <button onclick="zoomIn()" class="text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded hover:bg-gray-800">+</button>
         <button onclick="zoomOut()" class="text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded hover:bg-gray-800">-</button>
         <button onclick="zoomReset()" class="text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded hover:bg-gray-800">Reset</button>
+        <span class="text-gray-700">|</span>
+        <button onclick="undoCanvas()" class="text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded hover:bg-gray-800" title="Desfazer (Ctrl+Z)">↩</button>
+        <button onclick="redoCanvas()" class="text-xs text-gray-400 bg-gray-900/80 px-2 py-1 rounded hover:bg-gray-800" title="Refazer (Ctrl+Y)">↪</button>
       </div>
       <canvas id="fabric-canvas"></canvas>
     </div>
@@ -252,11 +255,27 @@ html,body{margin:0;height:100%;overflow:hidden}
 
 </div>
 
+<!-- Preview panel -->
+<div id="preview-panel" style="display:none" class="border-t border-gray-800 bg-gray-900 flex-shrink-0" style="height:50%">
+  <div class="flex items-center justify-between px-3 py-1.5 border-b border-gray-800">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-semibold text-gray-500 uppercase">Preview</span>
+      <input type="text" id="preview-url" value="http://localhost:8080" class="bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-xs text-gray-300 w-48" readonly>
+    </div>
+    <div class="flex gap-1">
+      <button onclick="refreshPreview()" class="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-800">Atualizar</button>
+      <button onclick="togglePreview()" class="text-xs text-gray-400 hover:text-white px-2 py-0.5 rounded hover:bg-gray-800">Fechar</button>
+    </div>
+  </div>
+  <iframe id="preview-iframe" src="" class="w-full bg-white" style="height:calc(100% - 32px);border:none"></iframe>
+</div>
+
 <!-- Status bar -->
 <div class="status-bar flex items-center justify-between px-4 py-1 bg-primary text-white flex-shrink-0">
   <div class="flex items-center gap-3">
     <span>Flang IDE</span>
     <span id="status-file" class="opacity-70">Nenhum arquivo</span>
+    <span id="status-modified" style="display:none" class="text-yellow-400 text-xs">● Nao salvo</span>
   </div>
   <div class="flex items-center gap-3 opacity-70">
     <span id="status-lang">Flang (.fg)</span>
@@ -367,7 +386,7 @@ require(['vs/editor/editor.main'], function() {
 
   // Create editor
   editor = monaco.editor.create(document.getElementById('editor-container'), {
-    value: '# Bem-vindo ao Flang IDE!\n# Selecione um arquivo na arvore a esquerda.\n# Ou clique + para criar um novo arquivo .fg\n',
+    value: '# Bem-vindo ao Flang IDE!\\n#\\n# Para comecar:\\n#   1. Abra um arquivo .fg na arvore a esquerda\\n#   2. Ou clique em Designer para montar telas visualmente\\n#   3. Ou clique em Fluxos para criar logica visual\\n#\\n# Atalhos:\\n#   Ctrl+S     Salvar\\n#   Ctrl+Z     Desfazer (no Designer)\\n#   Ctrl+Y     Refazer (no Designer)\\n#   Delete     Remover componente selecionado\\n#\\n# Templates prontos (no terminal):\\n#   flang new loja\\n#   flang new clinica\\n#   flang new escola\\n#   flang new delivery\\n#   flang new crm\\n#   flang new helpdesk\\n#   flang new blog\\n#   flang new financeiro\\n#\\n# 60+ funcoes built-in, 25 tipos de dados, 20 idiomas\\n# Documentacao: docs/TUTORIAL.md\\n',
     language: 'flang',
     theme: 'flang-dark',
     fontSize: 14,
@@ -395,6 +414,7 @@ require(['vs/editor/editor.main'], function() {
     if (activeFile) {
       modified[activeFile] = true;
       updateTabModified(activeFile, true);
+      document.getElementById('status-modified').style.display = 'inline';
     }
   });
 
@@ -530,6 +550,7 @@ function saveCurrentFile() {
     if (r.ok) {
       modified[activeFile] = false;
       updateTabModified(activeFile, false);
+      document.getElementById('status-modified').style.display = 'none';
       termLog('success', 'Salvo: ' + activeFile);
     }
   });
@@ -560,6 +581,8 @@ function runProject() {
   }).then(function(r){return r.json();}).then(function(d) {
     if (d.status === 'running') {
       termLog('success', 'App rodando em ' + d.url);
+      if (!previewOpen) togglePreview();
+      setTimeout(function(){ refreshPreview(); }, 2000);
     } else {
       termLog('error', 'Erro: ' + (d.message||'desconhecido'));
     }
@@ -676,12 +699,25 @@ function initFabricCanvas() {
   fabricCanvas.on('selection:cleared', function() { clearDesignerProps(); });
 
   // Update code on move/resize
-  fabricCanvas.on('object:modified', function() { updateDesignerCode(); });
-  fabricCanvas.on('object:added', function() { updateDesignerCode(); });
-  fabricCanvas.on('object:removed', function() { updateDesignerCode(); });
+  fabricCanvas.on('object:modified', function() { updateDesignerCode(); saveCanvasState(); });
+  fabricCanvas.on('object:added', function() { updateDesignerCode(); saveCanvasState(); });
+  fabricCanvas.on('object:removed', function() { updateDesignerCode(); saveCanvasState(); });
 
-  // Delete key
+  // Keyboard shortcuts for designer
   document.addEventListener('keydown', function(e) {
+    // Ctrl+Z = undo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && document.getElementById('panel-designer').style.display !== 'none') {
+      e.preventDefault();
+      undoCanvas();
+      return;
+    }
+    // Ctrl+Shift+Z or Ctrl+Y = redo
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey)) && document.getElementById('panel-designer').style.display !== 'none') {
+      e.preventDefault();
+      redoCanvas();
+      return;
+    }
+    // Delete key
     if (e.key === 'Delete' && fabricCanvas && fabricCanvas.getActiveObject()) {
       var obj = fabricCanvas.getActiveObject();
       if (obj && obj.compType) {
@@ -1357,6 +1393,74 @@ function clearFlow() {
   renderFlowNodes();
   renderFlowProps();
   document.getElementById('flow-generated-code').textContent = '';
+}
+
+// ============================================================
+// LIVE PREVIEW
+// ============================================================
+
+var previewOpen = false;
+function togglePreview() {
+  previewOpen = !previewOpen;
+  var panel = document.getElementById('preview-panel');
+  if (previewOpen) {
+    panel.style.display = 'block';
+    panel.style.height = '45%';
+    document.getElementById('preview-iframe').src = 'http://localhost:8080';
+    document.getElementById('btn-preview').classList.add('bg-primary','text-white');
+    document.getElementById('btn-preview').classList.remove('bg-gray-800','text-gray-300');
+  } else {
+    panel.style.display = 'none';
+    document.getElementById('preview-iframe').src = '';
+    document.getElementById('btn-preview').classList.remove('bg-primary','text-white');
+    document.getElementById('btn-preview').classList.add('bg-gray-800','text-gray-300');
+  }
+}
+function refreshPreview() {
+  var iframe = document.getElementById('preview-iframe');
+  iframe.src = iframe.src;
+}
+
+// ============================================================
+// UNDO/REDO FOR CANVAS
+// ============================================================
+
+var canvasHistory = [];
+var canvasHistoryIndex = -1;
+var canvasIgnoreChange = false;
+
+function saveCanvasState() {
+  if (canvasIgnoreChange || !fabricCanvas) return;
+  var state = JSON.stringify(fabricCanvas.toJSON(['compId','compType','compProps','compColor','compLabel']));
+  // Remove future states if we undid
+  canvasHistory = canvasHistory.slice(0, canvasHistoryIndex + 1);
+  canvasHistory.push(state);
+  if (canvasHistory.length > 50) canvasHistory.shift(); // limit
+  canvasHistoryIndex = canvasHistory.length - 1;
+}
+
+function undoCanvas() {
+  if (canvasHistoryIndex <= 0 || !fabricCanvas) return;
+  canvasHistoryIndex--;
+  canvasIgnoreChange = true;
+  fabricCanvas.loadFromJSON(canvasHistory[canvasHistoryIndex], function() {
+    fabricCanvas.renderAll();
+    canvasIgnoreChange = false;
+    updateDesignerCode();
+    termLog('info', 'Desfazer');
+  });
+}
+
+function redoCanvas() {
+  if (canvasHistoryIndex >= canvasHistory.length - 1 || !fabricCanvas) return;
+  canvasHistoryIndex++;
+  canvasIgnoreChange = true;
+  fabricCanvas.loadFromJSON(canvasHistory[canvasHistoryIndex], function() {
+    fabricCanvas.renderAll();
+    canvasIgnoreChange = false;
+    updateDesignerCode();
+    termLog('info', 'Refazer');
+  });
 }
 </script>
 </body>
