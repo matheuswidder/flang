@@ -290,6 +290,16 @@ function switchMode(mode) {
   document.getElementById('panel-editor').style.display = mode==='editor' ? 'flex' : 'none';
   document.getElementById('panel-designer').style.display = mode==='designer' ? 'flex' : 'none';
   document.getElementById('panel-fluxos').style.display = mode==='fluxos' ? 'flex' : 'none';
+  // Auto-create first screen if entering designer with no screens
+  if (mode === 'designer' && screens.length === 0) {
+    var screen = {name: 'principal', title: 'Principal', components: []};
+    screens.push(screen);
+    currentScreen = screen;
+    renderScreenList();
+    renderCanvas();
+    document.getElementById('canvas-screen-name').textContent = screen.title;
+    termLog('info', 'Tela "Principal" criada automaticamente. Arraste componentes para o canvas.');
+  }
 }
 
 // Initialize Monaco
