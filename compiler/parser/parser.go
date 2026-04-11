@@ -413,6 +413,20 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 		return ast.FieldTextoLongo, nil
 	case lexer.TokenEnum:
 		return ast.FieldEnum, nil
+	case lexer.TokenCPF:
+		return ast.FieldCPF, nil
+	case lexer.TokenCEP:
+		return ast.FieldCEP, nil
+	case lexer.TokenEstrelas:
+		return ast.FieldEstrelas, nil
+	case lexer.TokenDataHora:
+		return ast.FieldDataHora, nil
+	case lexer.TokenPercentual:
+		return ast.FieldPercentual, nil
+	case lexer.TokenTags:
+		return ast.FieldTags, nil
+	case lexer.TokenMoeda:
+		return ast.FieldMoeda, nil
 	}
 	typeMap := map[string]ast.FieldType{
 		"texto": ast.FieldTexto, "numero": ast.FieldNumero, "data": ast.FieldData,
@@ -425,6 +439,17 @@ func tokenToFieldType(tok lexer.Token) (ast.FieldType, error) {
 		"boolean": ast.FieldBooleano, "phone": ast.FieldTelefone, "image": ast.FieldImagem,
 		"file": ast.FieldArquivo, "money": ast.FieldDinheiro, "password": ast.FieldSenha,
 		"long_text": ast.FieldTextoLongo,
+		// New types PT
+		"cpf": ast.FieldCPF, "cnpj": ast.FieldCPF,
+		"cep": ast.FieldCEP, "zipcode": ast.FieldCEP,
+		"cor": ast.FieldCor,
+		"estrelas": ast.FieldEstrelas, "rating": ast.FieldEstrelas, "stars": ast.FieldEstrelas,
+		"hora": ast.FieldHora, "horario": ast.FieldHora, "time": ast.FieldHora,
+		"data_hora": ast.FieldDataHora, "datetime": ast.FieldDataHora,
+		"percentual": ast.FieldPercentual, "porcentagem": ast.FieldPercentual, "percentage": ast.FieldPercentual,
+		"tags": ast.FieldTags, "etiquetas": ast.FieldTags, "chips": ast.FieldTags,
+		"url": ast.FieldURL,
+		"moeda": ast.FieldMoeda, "currency_type": ast.FieldMoeda,
 	}
 	if ft, ok := typeMap[tok.Value]; ok {
 		return ft, nil

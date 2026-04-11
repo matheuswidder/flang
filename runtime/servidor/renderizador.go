@@ -739,6 +739,47 @@ func (s *Servidor) renderFormField(b *strings.Builder, model *ast.Model, f *ast.
 		b.WriteString(fmt.Sprintf(`<label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="%s-%s" class="sr-only peer"%s><div class="w-11 h-6 bg-gray-300 dark:bg-gray-700 rounded-full peer peer-checked:bg-primary peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div></label>`,
 			name, fname, req))
 
+	case f.Type == ast.FieldCPF:
+		b.WriteString(fmt.Sprintf(`<input type="text" id="%s-%s" placeholder="000.000.000-00" maxlength="18" oninput="maskCPF(this)" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldCEP:
+		b.WriteString(fmt.Sprintf(`<input type="text" id="%s-%s" placeholder="00000-000" maxlength="9" oninput="maskCEP(this)" onblur="buscaCEP(this)" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldCor:
+		b.WriteString(fmt.Sprintf(`<input type="color" id="%s-%s" value="#6366f1" style="height:40px;padding:4px" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldEstrelas:
+		b.WriteString(fmt.Sprintf(`<div class="flex gap-1" id="%s-%s-wrap">`, name, fname))
+		for i := 1; i <= 5; i++ {
+			b.WriteString(fmt.Sprintf(`<button type="button" class="text-2xl text-gray-600 hover:text-yellow-400 transition-colors" onclick="setStars('%s-%s',%d)">★</button>`, name, fname, i))
+		}
+		b.WriteString(fmt.Sprintf(`<input type="hidden" id="%s-%s" value="0">`, name, fname))
+		b.WriteString(`</div>`)
+
+	case f.Type == ast.FieldHora:
+		b.WriteString(fmt.Sprintf(`<input type="time" id="%s-%s" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldDataHora:
+		b.WriteString(fmt.Sprintf(`<input type="datetime-local" id="%s-%s" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldPercentual:
+		b.WriteString(fmt.Sprintf(`<div class="relative"><input type="number" id="%s-%s" min="0" max="100" step="0.1" placeholder="0" class="%s"%s><span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%%</span></div>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldTags:
+		b.WriteString(fmt.Sprintf(`<input type="text" id="%s-%s" placeholder="Digite e pressione Enter para adicionar" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag('%s-%s',this)}" class="%s"%s>`, name, fname, name, fname, inputClass, req))
+		b.WriteString(fmt.Sprintf(`<div id="%s-%s-tags" class="flex flex-wrap gap-1 mt-1"></div>`, name, fname))
+
+	case f.Type == ast.FieldURL:
+		b.WriteString(fmt.Sprintf(`<input type="url" id="%s-%s" placeholder="https://..." pattern="https?://.+" class="%s"%s>`, name, fname, inputClass, req))
+
+	case f.Type == ast.FieldMoeda:
+		b.WriteString(fmt.Sprintf(`<select id="%s-%s" class="%s"%s>`, name, fname, inputClass, req))
+		b.WriteString(`<option value="BRL">R$ - Real Brasileiro</option>`)
+		b.WriteString(`<option value="USD">$ - Dolar Americano</option>`)
+		b.WriteString(`<option value="EUR">€ - Euro</option>`)
+		b.WriteString(`<option value="GBP">£ - Libra</option>`)
+		b.WriteString(`</select>`)
+
 	// All other input types
 	default:
 		inputType := tipoInput(f.Type)
@@ -1475,6 +1516,14 @@ function chatHandleUpdate(msg){
   });
 }
 
+// ===== New field type helpers =====
+function maskCPF(el){var v=el.value.replace(/\D/g,'');if(v.length<=11){v=v.replace(/(\d{3})(\d)/,'$1.$2');v=v.replace(/(\d{3})(\d)/,'$1.$2');v=v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');}else{v=v.replace(/^(\d{2})(\d)/,'$1.$2');v=v.replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3');v=v.replace(/\.(\d{3})(\d)/,'.$1/$2');v=v.replace(/(\d{4})(\d)/,'$1-$2');}el.value=v;}
+function maskCEP(el){var v=el.value.replace(/\D/g,'');v=v.replace(/^(\d{5})(\d)/,'$1-$2');el.value=v;}
+function buscaCEP(el){var cep=el.value.replace(/\D/g,'');if(cep.length!==8)return;fetch('https://viacep.com.br/ws/'+cep+'/json/').then(r=>r.json()).then(function(d){if(d.erro)return;var form=el.closest('form');if(!form)return;var inputs=form.querySelectorAll('input');inputs.forEach(function(inp){var n=inp.id.toLowerCase();if(n.includes('cidade')||n.includes('city'))inp.value=d.localidade;if(n.includes('estado')||n.includes('state')||n.includes('uf'))inp.value=d.uf;if(n.includes('rua')||n.includes('endereco')||n.includes('logradouro')||n.includes('street'))inp.value=d.logradouro;if(n.includes('bairro')||n.includes('neighborhood'))inp.value=d.bairro;});}).catch(function(){});}
+function setStars(id,n){document.getElementById(id).value=n;var wrap=document.getElementById(id+'-wrap');if(!wrap)return;var btns=wrap.querySelectorAll('button');btns.forEach(function(b,i){b.style.color=i<n?'#eab308':'#4b5563';});}
+function addTag(id,input){var val=input.value.trim();if(!val)return;input.value='';var hidden=document.getElementById(id);var container=document.getElementById(id+'-tags');var current=hidden.value?hidden.value.split(','):[];if(current.indexOf(val)>=0)return;current.push(val);hidden.value=current.join(',');var chip=document.createElement('span');chip.className='inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary';chip.innerHTML=val+'<button type="button" onclick="removeTag(\''+id+'\',\''+val+'\',this.parentElement)" class="ml-1 hover:text-red-400">&times;</button>';container.appendChild(chip);}
+function removeTag(id,val,el){var hidden=document.getElementById(id);var current=hidden.value.split(',').filter(function(v){return v!==val;});hidden.value=current.join(',');el.remove();}
+
 // ===== Init =====
 document.addEventListener('DOMContentLoaded',function(){
   connectWS();
@@ -1642,6 +1691,26 @@ func fieldTypeCode(f *ast.Field) string {
 		return "b"
 	case ast.FieldSenha:
 		return "pw"
+	case ast.FieldCPF:
+		return "cpf"
+	case ast.FieldCEP:
+		return "cep"
+	case ast.FieldCor:
+		return "cor"
+	case ast.FieldEstrelas:
+		return "star"
+	case ast.FieldHora:
+		return "hr"
+	case ast.FieldDataHora:
+		return "dh"
+	case ast.FieldPercentual:
+		return "pct"
+	case ast.FieldTags:
+		return "tag"
+	case ast.FieldURL:
+		return "url"
+	case ast.FieldMoeda:
+		return "cur"
 	default:
 		return "t"
 	}

@@ -180,6 +180,17 @@ const (
 	TokenEqualEqual
 	TokenLBracket
 	TokenRBracket
+
+	// New field type tokens
+	TokenCPF
+	TokenCEP
+	TokenEstrelas
+	TokenHoraTipo
+	TokenDataHora
+	TokenPercentual
+	TokenTags
+	TokenURLTipo
+	TokenMoeda
 )
 
 // Token represents a single lexical token.
@@ -250,6 +261,14 @@ var keywords = map[string]TokenType{
 	"nulo": TokenNulo, "nada": TokenNulo,
 	"verdadeiro": TokenVerdadeiro, "falso": TokenFalso,
 	"nao": TokenNao, "em": TokenEm, "ate": TokenAte,
+	// Tipos extras
+	"cpf": TokenCPF, "cnpj": TokenCPF,
+	"cep": TokenCEP,
+	"estrelas": TokenEstrelas,
+	"data_hora": TokenDataHora,
+	"percentual": TokenPercentual, "porcentagem": TokenPercentual,
+	"tags": TokenTags, "etiquetas": TokenTags,
+	"moeda": TokenMoeda,
 
 	// ===================== ENGLISH =====================
 	"system": TokenSistema, "models": TokenDados, "screens": TokenTelas,
@@ -301,6 +320,13 @@ var keywords = map[string]TokenType{
 	"true": TokenVerdadeiro, "false": TokenFalso,
 	"not": TokenNao, "in": TokenEm, "until": TokenAte,
 	"for": TokenPara, "each": TokenCada, "print": TokenMostrar,
+	// Extra types EN
+	"rating": TokenEstrelas, "stars": TokenEstrelas,
+	"zipcode": TokenCEP, "postal_code": TokenCEP,
+	"datetime": TokenDataHora,
+	"percentage": TokenPercentual, "percent": TokenPercentual,
+	"chips": TokenTags,
+	"currency_type": TokenMoeda,
 
 	// Colors
 	"azul": TokenIdentifier, "verde": TokenIdentifier, "vermelho": TokenIdentifier,
@@ -635,7 +661,8 @@ func IsTypeKeyword(tt TokenType) bool {
 	switch tt {
 	case TokenTexto, TokenNumero, TokenData, TokenBooleano, TokenEmail,
 		TokenTelefone, TokenImagem, TokenArquivo, TokenUpload, TokenLink,
-		TokenStatus, TokenDinheiro, TokenSenha, TokenTextoLongo, TokenEnum:
+		TokenStatus, TokenDinheiro, TokenSenha, TokenTextoLongo, TokenEnum,
+		TokenCPF, TokenCEP, TokenEstrelas, TokenDataHora, TokenPercentual, TokenTags, TokenMoeda:
 		return true
 	}
 	return false

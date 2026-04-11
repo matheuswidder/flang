@@ -263,6 +263,16 @@ const (
 	FieldSenha      FieldType = "senha"
 	FieldTextoLongo FieldType = "texto_longo"
 	FieldEnum       FieldType = "enum"
+	FieldCPF        FieldType = "cpf"
+	FieldCEP        FieldType = "cep"
+	FieldCor        FieldType = "cor"
+	FieldEstrelas   FieldType = "estrelas"
+	FieldHora       FieldType = "hora"
+	FieldDataHora   FieldType = "data_hora"
+	FieldPercentual FieldType = "percentual"
+	FieldTags       FieldType = "tags"
+	FieldURL        FieldType = "url"
+	FieldMoeda      FieldType = "moeda"
 )
 
 type Field struct {
@@ -280,11 +290,11 @@ func (f *Field) NodeType() string { return "Field" }
 
 func (ft FieldType) SQLType() string {
 	switch ft {
-	case FieldNumero, FieldDinheiro:
+	case FieldNumero, FieldDinheiro, FieldEstrelas, FieldPercentual:
 		return "REAL"
 	case FieldBooleano:
 		return "INTEGER"
-	case FieldData:
+	case FieldData, FieldDataHora:
 		return "DATETIME"
 	default:
 		return "TEXT"
